@@ -50,7 +50,6 @@ fun HomeScreen(
     onPickFolder: () -> Unit,
     onRescan: () -> Unit,
     modifier: Modifier = Modifier,
-    onScrollDirection: ((Boolean) -> Unit)? = null,
 ) {
     var selectedChannel by rememberSaveable { mutableStateOf<String?>(null) }
 
@@ -59,6 +58,14 @@ fun HomeScreen(
         .eachCount()
         .toList()
         .sortedWith(compareByDescending<Pair<String, Int>> { it.second }.thenBy { it.first })
+
+    // Foto kanal (kalau ada) dipakai juga pada chip filter di atas grid.
+    val channelAvatars = state.videos
+        .mapNotNull { video ->
+            val avatar = video.channelAvatarPath ?: return@mapNotNull null
+            video.channel to avatar
+        }
+        .toMap()
 
     LaunchedEffect(channels) {
         if (selectedChannel != null && channels.none { it.first == selectedChannel }) {
@@ -157,6 +164,7 @@ fun HomeScreen(
             selectedChannel = selectedChannel,
             onSelect = { selectedChannel = it },
             modifier = Modifier.padding(bottom = 4.dp),
+            channelAvatars = channelAvatars,
         )
         key(selectedChannel) {
             VideoGrid(
@@ -164,7 +172,6 @@ fun HomeScreen(
                 onPlay = { onPlay(it, visibleVideos) },
                 onToggleFavorite = onToggleFavorite,
                 modifier = Modifier.weight(1f),
-                onScrollDirection = onScrollDirection,
                 header = {
                     Column(modifier = Modifier.fillMaxWidth()) {
                         if (continueVideos.isNotEmpty()) {

@@ -14,17 +14,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -40,7 +37,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -78,53 +74,37 @@ fun WatchLayout(
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .windowInsetsPadding(WindowInsets.safeDrawing),
+            .background(MaterialTheme.colorScheme.background),
     ) {
         val sidebarWidth = if (maxWidth >= 1000.dp) 360.dp else 300.dp
-        val compactHeight = maxHeight < 520.dp
+        // Lebar video mengikuti kolom kiri agar menempel ke tepi layar, tetapi
+        // tingginya dibatasi supaya judul & kanal tetap terlihat di layar pendek.
+        val contentWidth = (maxWidth - sidebarWidth - 1.dp).coerceAtLeast(160.dp)
+        val maxVideoHeight = (maxHeight - 128.dp).coerceAtLeast(90.dp)
+        val videoWidth = minOf(contentWidth, maxVideoHeight * 16f / 9f)
+        val videoHeight = videoWidth * 9f / 16f
 
-        Column(modifier = Modifier.fillMaxSize()) {
-            // Header disembunyikan seperti YouTube: pemutar langsung di atas,
-            // tombol kembali & layar penuh ada di overlay pemutar.
-            Row(modifier = Modifier.weight(1f).fillMaxWidth()) {
+        Row(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight(),
+            ) {
+                // Seperti YouTube: pemutar menempel ke tepi atas & kiri layar,
+                // tanpa padding dan tanpa sudut membulat.
+                playerStage(
+                    Modifier
+                        .width(videoWidth)
+                        .height(videoHeight),
+                )
+
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .fillMaxHeight()
-                        .then(
-                            if (compactHeight) {
-                                Modifier.verticalScroll(rememberScrollState())
-                            } else {
-                                Modifier
-                            },
-                        )
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
                         .padding(horizontal = 16.dp, vertical = 12.dp),
                 ) {
-                    if (compactHeight) {
-                        playerStage(
-                            Modifier
-                                .fillMaxWidth()
-                                .aspectRatio(16f / 9f)
-                                .clip(RoundedCornerShape(14.dp)),
-                        )
-                    } else {
-                        BoxWithConstraints(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .weight(1f),
-                        ) {
-                            val playerWidth = minOf(maxWidth, maxHeight * 16f / 9f)
-                            val playerHeight = playerWidth * 9f / 16f
-                            playerStage(
-                                Modifier
-                                    .width(playerWidth)
-                                    .height(playerHeight)
-                                    .align(Alignment.Center)
-                                    .clip(RoundedCornerShape(14.dp)),
-                            )
-                        }
-                    }
 
                     Spacer(Modifier.height(12.dp))
                     Text(
@@ -139,7 +119,7 @@ fun WatchLayout(
                     Spacer(Modifier.height(10.dp))
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        ChannelAvatar(channel = video.channel, size = 38)
+                        ChannelAvatar(channel = video.channel, size = 38, avatarPath = video.channelAvatarPath)
                         Spacer(Modifier.width(10.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
@@ -195,16 +175,15 @@ fun WatchLayout(
                     }
                     Spacer(Modifier.height(8.dp))
                 }
-
-                VerticalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                RecommendationSidebar(
-                    videos = suggestions,
-                    onPlay = onPlayVideo,
-                    modifier = Modifier
-                        .width(sidebarWidth)
-                        .fillMaxHeight(),
-                )
             }
+
+            RecommendationSidebar(
+                videos = suggestions,
+                onPlay = onPlayVideo,
+                modifier = Modifier
+                    .width(sidebarWidth)
+                    .fillMaxHeight(),
+            )
         }
     }
 }
@@ -260,28 +239,22 @@ private fun RecommendationSidebar(
     Column(
         modifier = modifier.background(MaterialTheme.colorScheme.surface),
     ) {
-        Text(
-            text = "Rekomendasi",
-            style = MaterialTheme.typography.titleMedium.copy(
-                fontWeight = FontWeight.SemiBold,
-            ),
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 6.dp),
-        )
+        // Seperti YouTube: tanpa judul bagian, kartu rekomendasi langsung tampil
+        // dengan thumbnail besar di atas dan keterangan video di bawahnya.
         if (videos.isEmpty()) {
             Text(
                 text = "Belum ada video lain di folder ini.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
             )
         } else {
             LazyColumn(
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(videos, key = { it.uri }) { item ->
-                    RecommendationRow(
+                    RecommendationCard(
                         video = item,
                         onClick = { onPlay(item) },
                     )
@@ -292,15 +265,16 @@ private fun RecommendationSidebar(
 }
 
 @Composable
-private fun RecommendationRow(
+private fun RecommendationCard(
     video: Video,
     onClick: () -> Unit,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val focused by interactionSource.collectIsFocusedAsState()
-    val shape = RoundedCornerShape(10.dp)
+    val shape = RoundedCornerShape(12.dp)
 
-    Row(
+    // Satu kolom dua baris: thumbnail di atas, nama kanal & judul di bawah.
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .clip(shape)
@@ -317,13 +291,12 @@ private fun RecommendationRow(
                 onClick = onClick,
             )
             .padding(6.dp),
-        verticalAlignment = Alignment.Top,
     ) {
         Box(
             modifier = Modifier
-                .width(128.dp)
+                .fillMaxWidth()
                 .aspectRatio(16f / 9f)
-                .clip(RoundedCornerShape(8.dp)),
+                .clip(RoundedCornerShape(10.dp)),
         ) {
             VideoThumbnail(
                 path = video.thumbnailPath,
@@ -343,32 +316,37 @@ private fun RecommendationRow(
                 )
             }
         }
-        Spacer(Modifier.width(10.dp))
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = video.title,
-                style = MaterialTheme.typography.titleSmall.copy(
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 14.sp,
-                    lineHeight = 18.sp,
-                ),
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Spacer(Modifier.height(3.dp))
-            Text(
-                text = video.channel,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = formatDuration(video.durationMs),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+        Spacer(Modifier.height(8.dp))
+        Row(modifier = Modifier.fillMaxWidth()) {
+            ChannelAvatar(channel = video.channel, size = 34, avatarPath = video.channelAvatarPath)
+            Spacer(Modifier.width(10.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = video.title,
+                    style = MaterialTheme.typography.titleSmall.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 14.sp,
+                        lineHeight = 18.sp,
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Spacer(Modifier.height(3.dp))
+                Text(
+                    text = video.channel,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = "${formatDuration(video.durationMs)} • offline",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                )
+            }
         }
     }
 }

@@ -15,6 +15,11 @@ data class Video(
     /** true kalau head unit tidak punya decoder hardware untuk codec ini. */
     val softwareOnly: Boolean = false,
     val thumbnailPath: String? = null,
+    /**
+     * Foto kanal (avatar) hasil salinan dari folder kanal, misalnya
+     * `Babatigara/Babatigara.jpg`. Null berarti pakai inisial huruf seperti biasa.
+     */
+    val channelAvatarPath: String? = null,
     val positionMs: Long = 0L,
     val lastPlayedAt: Long = 0L,
     val completed: Boolean = false,

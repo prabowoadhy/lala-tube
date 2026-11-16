@@ -25,7 +25,6 @@ fun FavoritesScreen(
     onToggleFavorite: (Video) -> Unit,
     onPickFolder: () -> Unit,
     modifier: Modifier = Modifier,
-    onScrollDirection: ((Boolean) -> Unit)? = null,
 ) {
     val favorites = videos.filter { it.favorite }
     if (favorites.isEmpty()) {
@@ -52,7 +51,6 @@ fun FavoritesScreen(
         onPlay = { onPlay(it, favorites) },
         onToggleFavorite = onToggleFavorite,
         modifier = modifier.fillMaxSize(),
-        onScrollDirection = onScrollDirection,
         header = {
             Column {
                 Spacer(Modifier.height(8.dp))
@@ -72,7 +70,6 @@ fun HistoryScreen(
     onPlay: (Video, List<Video>) -> Unit,
     onToggleFavorite: (Video) -> Unit,
     modifier: Modifier = Modifier,
-    onScrollDirection: ((Boolean) -> Unit)? = null,
 ) {
     val history = videos
         .filter { it.lastPlayedAt > 0L }
@@ -97,7 +94,6 @@ fun HistoryScreen(
         onPlay = { onPlay(it, history) },
         onToggleFavorite = onToggleFavorite,
         modifier = modifier.fillMaxSize(),
-        onScrollDirection = onScrollDirection,
         header = {
             Column {
                 Spacer(Modifier.height(8.dp))

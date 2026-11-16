@@ -49,8 +49,14 @@ class LibraryRepository(private val context: Context) {
         private const val KEY_SAFE_MODE = "safe_mode"
         private const val THUMB_WIDTH = 640
         private const val THUMB_HEIGHT = 360
+        private const val AVATAR_SIZE = 160
         private const val MAX_DEPTH = 8
         private const val MAX_FILES = 5_000
+
+        /** Nama file gambar profil selain nama folder kanal. */
+        private val AVATAR_ALIASES = listOf(
+            "avatar", "kanal", "channel", "logo", "profil", "profile", "channel-avatar",
+        )
 
         val VIDEO_EXTENSIONS = setOf(
             "mp4", "m4v", "mkv", "webm", "mov", "avi", "3gp", "ts", "m2ts",
@@ -62,6 +68,7 @@ class LibraryRepository(private val context: Context) {
     private val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     private val libraryFile = File(context.filesDir, "library.json")
     private val thumbDir = File(context.cacheDir, "thumbs").apply { mkdirs() }
+    private val avatarDir = File(context.cacheDir, "avatars").apply { mkdirs() }
     private val writeMutex = Mutex()
 
     /** Daftar codec sistem, dibangun sekali lalu dipakai ulang saat memindai. */
@@ -286,6 +293,19 @@ class LibraryRepository(private val context: Context) {
         }
         onProgress(0, found.size)
 
+        // Satu gambar profil per kanal cukup; disalin sekali lalu dipakai semua
+        // video di kanal tersebut.
+        val avatarCache = HashMap<String, String?>()
+        fun avatarFor(channel: String): String? {
+            if (avatarCache.containsKey(channel)) return avatarCache[channel]
+            val source = found.firstOrNull {
+                it.channel == channel && (it.avatarFile != null || it.avatarUri != null)
+            }
+            val saved = source?.let { saveChannelAvatar(it) }
+            avatarCache[channel] = saved
+            return saved
+        }
+
         val result = ArrayList<Video>(found.size)
         val pending = ArrayList<Int>()
         found.forEachIndexed { index, item ->
@@ -306,7 +326,7 @@ class LibraryRepository(private val context: Context) {
             } else {
                 baseVideo(item, previous)
             }
-            result.add(video)
+            result.add(video.copy(channelAvatarPath = avatarFor(item.channel)))
             if (!cacheValid) pending.add(index)
         }
 
@@ -429,6 +449,7 @@ class LibraryRepository(private val context: Context) {
         output: MutableList<FoundFile>,
         depth: Int,
         prelisted: Array<DocumentFile>? = null,
+        avatarUri: DocumentFile? = null,
     ) {
         if (depth > MAX_DEPTH || output.size >= MAX_FILES) return
         val children = prelisted
@@ -443,6 +464,14 @@ class LibraryRepository(private val context: Context) {
             }
             .associateBy { it.baseNameLower() }
 
+        // Folder kanal boleh berisi satu gambar profil dengan nama sama seperti
+        // foldernya (mis. `Babatigara/Babatigara.jpg`) atau nama umum di bawah.
+        val folderAvatar = if (depth == 1 && relativePath.isNotBlank()) {
+            findAvatar(images, relativePath.substringBefore('/'))
+        } else {
+            null
+        }
+
         for (child in children) {
             if (output.size >= MAX_FILES) return
             val name = runCatching { child.name }.getOrNull() ?: continue
@@ -451,7 +480,13 @@ class LibraryRepository(private val context: Context) {
             val isDirectory = runCatching { child.isDirectory }.getOrDefault(false)
             if (isDirectory) {
                 val childPath = if (relativePath.isBlank()) name else "$relativePath/$name"
-                collectVideos(child, childPath, output, depth + 1)
+                collectVideos(
+                    directory = child,
+                    relativePath = childPath,
+                    output = output,
+                    depth = depth + 1,
+                    avatarUri = folderAvatar ?: avatarUri,
+                )
                 continue
             }
 
@@ -462,6 +497,7 @@ class LibraryRepository(private val context: Context) {
                 relativePath.isBlank() -> "Video Offline"
                 else -> relativePath.substringBefore('/')
             }
+            val avatar = folderAvatar ?: avatarUri
             output.add(
                 FoundFile(
                     uri = child.uri,
@@ -473,6 +509,10 @@ class LibraryRepository(private val context: Context) {
                     size = runCatching { child.length() }.getOrDefault(0L),
                     poster = poster,
                     posterFile = null,
+                    avatarUri = avatar?.uri,
+                    avatarStamp = avatar?.let {
+                        runCatching { it.lastModified() }.getOrDefault(0L)
+                    } ?: 0L,
                 ),
             )
         }
@@ -489,6 +529,7 @@ class LibraryRepository(private val context: Context) {
         output: MutableList<FoundFile>,
         depth: Int,
         prelisted: Array<File>? = null,
+        avatarFile: File? = null,
     ) {
         if (depth > MAX_DEPTH || output.size >= MAX_FILES) return
         val children = prelisted
@@ -502,6 +543,14 @@ class LibraryRepository(private val context: Context) {
             .filter { it.isFile && it.extensionLower() in IMAGE_EXTENSIONS }
             .associateBy { it.baseNameLower() }
 
+        // Foto profil kanal: nama file sama dengan nama folder, misalnya
+        // `Babatigara/Babatigara.jpg`. Nama umum seperti `avatar.jpg` juga diterima.
+        val folderAvatar = if (depth == 1 && relativePath.isNotBlank()) {
+            findAvatar(posters, relativePath.substringBefore('/'))
+        } else {
+            null
+        }
+
         for (child in children) {
             if (output.size >= MAX_FILES) return
             val name = child.name
@@ -509,7 +558,13 @@ class LibraryRepository(private val context: Context) {
 
             if (runCatching { child.isDirectory }.getOrDefault(false)) {
                 val childPath = if (relativePath.isBlank()) name else "$relativePath/$name"
-                collectFromDirectory(child, childPath, output, depth + 1)
+                collectFromDirectory(
+                    directory = child,
+                    relativePath = childPath,
+                    output = output,
+                    depth = depth + 1,
+                    avatarFile = folderAvatar ?: avatarFile,
+                )
                 continue
             }
             if (!runCatching { child.isFile }.getOrDefault(false)) continue
@@ -521,6 +576,7 @@ class LibraryRepository(private val context: Context) {
             } else {
                 relativePath.substringBefore('/')
             }
+            val avatar = folderAvatar ?: avatarFile
             output.add(
                 FoundFile(
                     uri = Uri.fromFile(child),
@@ -532,9 +588,23 @@ class LibraryRepository(private val context: Context) {
                     size = runCatching { child.length() }.getOrDefault(0L),
                     poster = null,
                     posterFile = poster,
+                    avatarFile = avatar,
+                    avatarStamp = avatar?.let {
+                        runCatching { it.lastModified() }.getOrDefault(0L)
+                    } ?: 0L,
                 ),
             )
         }
+    }
+
+    /** Mencari gambar profil kanal di dalam daftar gambar satu folder. */
+    private fun <T> findAvatar(images: Map<String, T>, channel: String): T? {
+        val direct = images[channel.trim().lowercase()]
+        if (direct != null) return direct
+        for (alias in AVATAR_ALIASES) {
+            images[alias]?.let { return it }
+        }
+        return null
     }
 
     /** Video dasar tanpa menyentuh decoder: judul, kanal, dan data lama. */
@@ -699,6 +769,51 @@ class LibraryRepository(private val context: Context) {
         }
     }
 
+    /**
+     * Menyalin gambar profil kanal ke cache aplikasi dalam ukuran kecil, supaya
+     * tampilannya ringan dan tetap bisa dibaca baik lewat akses file langsung
+     * maupun SAF. Hasilnya `null` kalau gambar tidak ada atau gagal dibaca.
+     */
+    private fun saveChannelAvatar(item: FoundFile): String? {
+        if (item.avatarFile == null && item.avatarUri == null) return null
+        val filename = "avatar_${shortHash(item.channel)}_${item.avatarStamp}.jpg"
+        val output = File(avatarDir, filename)
+        if (output.exists() && output.length() > 0L) return output.absolutePath
+
+        var bitmap: Bitmap? = null
+        try {
+            bitmap = item.avatarFile?.let { decodePosterFile(it) }
+                ?: item.avatarUri?.let { decodePoster(it) }
+                ?: return null
+            val cropped = runCatching { centerCrop(bitmap, AVATAR_SIZE, AVATAR_SIZE) }
+                .getOrNull() ?: return null
+            return try {
+                FileOutputStream(output).use { stream ->
+                    cropped.compress(Bitmap.CompressFormat.JPEG, 88, stream)
+                }
+                // Versi lama dengan cap waktu berbeda tidak dipakai lagi.
+                avatarDir.listFiles()?.forEach { file ->
+                    if (file.isFile && file.name.startsWith("avatar_${shortHash(item.channel)}_") &&
+                        file.absolutePath != output.absolutePath
+                    ) {
+                        file.delete()
+                    }
+                }
+                output.absolutePath
+            } catch (_: Throwable) {
+                output.delete()
+                null
+            } finally {
+                if (cropped !== bitmap) runCatching { cropped.recycle() }
+            }
+        } catch (_: Throwable) {
+            output.delete()
+            return null
+        } finally {
+            runCatching { bitmap?.takeIf { !it.isRecycled }?.recycle() }
+        }
+    }
+
     private fun decodeFrame(item: FoundFile, durationMs: Long): Bitmap? = runCatching {
         openDescriptor(item)?.use { pfd ->
             val retriever = MediaMetadataRetriever()
@@ -836,6 +951,7 @@ class LibraryRepository(private val context: Context) {
                     codecMime = json.optString("codec").takeIf { it.isNotBlank() }.orEmpty(),
                     softwareOnly = json.optBoolean("softwareOnly", false),
                     thumbnailPath = json.optString("thumbnail").takeIf { it.isNotBlank() },
+                    channelAvatarPath = json.optString("channelAvatar").takeIf { it.isNotBlank() },
                     positionMs = json.optLong("position", 0L),
                     lastPlayedAt = json.optLong("lastPlayedAt", 0L),
                     completed = json.optBoolean("completed", false),
@@ -865,6 +981,7 @@ class LibraryRepository(private val context: Context) {
                         put("codec", video.codecMime)
                         put("softwareOnly", video.softwareOnly)
                         put("thumbnail", video.thumbnailPath ?: "")
+                        put("channelAvatar", video.channelAvatarPath ?: "")
                         put("position", video.positionMs)
                         put("lastPlayedAt", video.lastPlayedAt)
                         put("completed", video.completed)
@@ -920,6 +1037,12 @@ class LibraryRepository(private val context: Context) {
         val size: Long,
         val poster: Uri?,
         val posterFile: File?,
+        /** Gambar profil kanal (kalau ada), untuk mode akses file langsung. */
+        val avatarFile: File? = null,
+        /** Gambar profil kanal untuk mode SAF/DocumentFile. */
+        val avatarUri: Uri? = null,
+        /** Waktu ubah gambar profil, dipakai sebagai bagian nama cache. */
+        val avatarStamp: Long = 0L,
     )
 }
 

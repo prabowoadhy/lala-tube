@@ -132,7 +132,7 @@ fun PlayerScreen(
     var playbackState by remember { mutableIntStateOf(Player.STATE_IDLE) }
     var positionMs by remember { mutableLongStateOf(0L) }
     var durationMs by remember { mutableLongStateOf(video.durationMs) }
-    var controlsVisible by remember { mutableStateOf(true) }
+    var controlsVisible by remember { mutableStateOf(false) }
     var isScrubbing by remember { mutableStateOf(false) }
     var scrubPosition by remember { mutableLongStateOf(0L) }
     var ended by remember { mutableStateOf(false) }
@@ -262,7 +262,7 @@ fun PlayerScreen(
 
     val effectiveDuration = durationMs.coerceAtLeast(0L)
     val sliderPosition = if (isScrubbing) scrubPosition else positionMs
-    val showControls = controlsVisible || !isPlaying || ended || errorMessage != null
+    val showControls = controlsVisible || ended || errorMessage != null
 
     val playerStage: @Composable (Modifier) -> Unit = { stageModifier ->
     Box(
@@ -302,7 +302,9 @@ fun PlayerScreen(
             )
         }
 
-        if (!isPlaying && !ended && errorMessage == null && !controlsVisible) {
+        if (!isPlaying && !ended && errorMessage == null && !controlsVisible &&
+            playbackState == Player.STATE_READY
+        ) {
             Box(
                 modifier = Modifier
                     .align(Alignment.Center)
@@ -346,7 +348,7 @@ fun PlayerScreen(
                         )
                     }
                     Spacer(Modifier.width(6.dp))
-                    ChannelAvatar(channel = video.channel, size = 34)
+                    ChannelAvatar(channel = video.channel, size = 34, avatarPath = video.channelAvatarPath)
                     Spacer(Modifier.width(10.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(

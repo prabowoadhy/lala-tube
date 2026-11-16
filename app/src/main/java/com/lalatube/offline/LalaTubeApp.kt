@@ -3,11 +3,6 @@ package com.lalatube.offline
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -106,7 +101,6 @@ fun LalaTubeApp(viewModel: MainViewModel) {
     var playerId by rememberSaveable { mutableStateOf<String?>(null) }
     var playerFullscreen by rememberSaveable { mutableStateOf(false) }
     var playerQueue by remember { mutableStateOf<List<String>>(emptyList()) }
-    var headerVisible by remember { mutableStateOf(true) }
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
 
@@ -138,10 +132,7 @@ fun LalaTubeApp(viewModel: MainViewModel) {
         }
     }
 
-    // Saat pindah tab atau menutup pencarian, header selalu tampil lagi.
-    LaunchedEffect(tab, searchOpen) { headerVisible = true }
-
-    // Setelah pengguna kembali dari halaman izin Android, status izin disegarkan
+    // Saat pengguna kembali dari halaman izin Android, status izin disegarkan
     // supaya daftar folder langsung bisa dibuka tanpa menutup aplikasi.
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
         viewModel.refreshStoragePermission()
@@ -265,42 +256,36 @@ fun LalaTubeApp(viewModel: MainViewModel) {
                             )
                         } else {
                             Column(modifier = Modifier.fillMaxSize()) {
-                                AnimatedVisibility(
-                                    visible = headerVisible,
-                                    enter = slideInVertically(initialOffsetY = { -it }) + fadeIn(),
-                                    exit = slideOutVertically(targetOffsetY = { -it }) + fadeOut(),
-                                ) {
-                                    Column {
-                                        AppTopBar(
-                                            isScanning = state.isScanning,
-                                            onSearch = { searchOpen = true },
-                                            onRefresh = viewModel::rescan,
-                                        )
-                                        if (state.isScanning) {
-                                            val progress = if (state.scanTotal > 0) {
-                                                state.scanDone.toFloat() / state.scanTotal.toFloat()
-                                            } else {
-                                                null
-                                            }
-                                            if (progress == null) {
-                                                LinearProgressIndicator(
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .height(2.dp),
-                                                )
-                                            } else {
-                                                LinearProgressIndicator(
-                                                    progress = { progress },
-                                                    modifier = Modifier
-                                                        .fillMaxWidth()
-                                                        .height(2.dp),
-                                                )
-                                            }
+                                Column {
+                                    AppTopBar(
+                                        isScanning = state.isScanning,
+                                        onSearch = { searchOpen = true },
+                                        onRefresh = viewModel::rescan,
+                                    )
+                                    if (state.isScanning) {
+                                        val progress = if (state.scanTotal > 0) {
+                                            state.scanDone.toFloat() / state.scanTotal.toFloat()
                                         } else {
-                                            HorizontalDivider(
-                                                color = MaterialTheme.colorScheme.outlineVariant,
+                                            null
+                                        }
+                                        if (progress == null) {
+                                            LinearProgressIndicator(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(2.dp),
+                                            )
+                                        } else {
+                                            LinearProgressIndicator(
+                                                progress = { progress },
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .height(2.dp),
                                             )
                                         }
+                                    } else {
+                                        HorizontalDivider(
+                                            color = MaterialTheme.colorScheme.outlineVariant,
+                                        )
                                     }
                                 }
 
@@ -325,9 +310,6 @@ fun LalaTubeApp(viewModel: MainViewModel) {
                                                 onToggleFavorite = { viewModel.toggleFavorite(it.uri) },
                                                 onPickFolder = pickFolder,
                                                 modifier = Modifier.fillMaxSize(),
-                                                onScrollDirection = { down ->
-                                                    headerVisible = !down
-                                                },
                                             )
 
                                             Tabs.HISTORY -> HistoryScreen(
@@ -335,9 +317,6 @@ fun LalaTubeApp(viewModel: MainViewModel) {
                                                 onPlay = openPlayer,
                                                 onToggleFavorite = { viewModel.toggleFavorite(it.uri) },
                                                 modifier = Modifier.fillMaxSize(),
-                                                onScrollDirection = { down ->
-                                                    headerVisible = !down
-                                                },
                                             )
 
                                             Tabs.SETTINGS -> SettingsScreen(
@@ -361,9 +340,6 @@ fun LalaTubeApp(viewModel: MainViewModel) {
                                                 onPickFolder = pickFolder,
                                                 onRescan = viewModel::rescan,
                                                 modifier = Modifier.fillMaxSize(),
-                                                onScrollDirection = { down ->
-                                                    headerVisible = !down
-                                                },
                                             )
                                         }
                                     }

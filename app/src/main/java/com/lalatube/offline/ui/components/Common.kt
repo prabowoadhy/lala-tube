@@ -5,6 +5,7 @@ import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -56,17 +57,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -138,7 +139,27 @@ fun ChannelAvatar(
     channel: String,
     size: Int = 36,
     modifier: Modifier = Modifier,
+    avatarPath: String? = null,
 ) {
+    val bitmap by produceState(
+        initialValue = ThumbnailBitmapCache.peek(avatarPath),
+        key1 = avatarPath,
+    ) {
+        value = ThumbnailBitmapCache.load(avatarPath)
+    }
+
+    if (bitmap != null) {
+        Image(
+            bitmap = bitmap!!,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = modifier
+                .size(size.dp)
+                .clip(CircleShape),
+        )
+        return
+    }
+
     val color = channelColor(channel)
     Box(
         modifier = modifier
@@ -331,7 +352,7 @@ fun VideoCard(
 
         Spacer(Modifier.height(9.dp))
         Row(modifier = Modifier.fillMaxWidth()) {
-            ChannelAvatar(channel = video.channel, size = 36)
+            ChannelAvatar(channel = video.channel, size = 36, avatarPath = video.channelAvatarPath)
             Spacer(Modifier.width(9.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -497,6 +518,7 @@ fun ChannelFilterChip(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    avatarPath: String? = null,
 ) {
     FilterChip(
         selected = selected,
@@ -504,7 +526,7 @@ fun ChannelFilterChip(
         modifier = modifier.heightIn(min = 38.dp),
         shape = CircleShape,
         leadingIcon = {
-            ChannelAvatar(channel = channel, size = 23)
+            ChannelAvatar(channel = channel, size = 23, avatarPath = avatarPath)
         },
         label = {
             Text(
@@ -684,7 +706,6 @@ fun VideoGrid(
     modifier: Modifier = Modifier,
     header: (@Composable () -> Unit)? = null,
     emptyContent: (@Composable () -> Unit)? = null,
-    onScrollDirection: ((scrollingDown: Boolean) -> Unit)? = null,
 ) {
     if (videos.isEmpty() && emptyContent != null) {
         Box(modifier = modifier.fillMaxSize()) {
@@ -694,27 +715,6 @@ fun VideoGrid(
     }
 
     val gridState = rememberLazyGridState()
-
-    // Melaporkan arah gulir supaya header bisa disembunyikan seperti YouTube.
-    if (onScrollDirection != null) {
-        LaunchedEffect(gridState, onScrollDirection) {
-            var lastIndex = gridState.firstVisibleItemIndex
-            var lastOffset = gridState.firstVisibleItemScrollOffset
-            snapshotFlow {
-                gridState.firstVisibleItemIndex to gridState.firstVisibleItemScrollOffset
-            }.collect { (index, offset) ->
-                val movedDown = index > lastIndex || (index == lastIndex && offset > lastOffset)
-                val atTop = index == 0 && offset <= 8
-                when {
-                    atTop -> onScrollDirection(false)
-                    movedDown -> onScrollDirection(true)
-                    index < lastIndex || offset < lastOffset -> onScrollDirection(false)
-                }
-                lastIndex = index
-                lastOffset = offset
-            }
-        }
-    }
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         // 2K (sekitar 1280dp) = 4 kolom, layar lebih lebar dapat 5 kolom.
@@ -776,6 +776,7 @@ fun ChannelChipRow(
     selectedChannel: String?,
     onSelect: (String?) -> Unit,
     modifier: Modifier = Modifier,
+    channelAvatars: Map<String, String> = emptyMap(),
 ) {
     LazyRow(
         modifier = modifier.fillMaxWidth(),
@@ -809,6 +810,7 @@ fun ChannelChipRow(
                 label = if (count > 0) "$channel · $count" else channel,
                 selected = selectedChannel == channel,
                 onClick = { onSelect(if (selectedChannel == channel) null else channel) },
+                avatarPath = channelAvatars[channel],
             )
         }
     }

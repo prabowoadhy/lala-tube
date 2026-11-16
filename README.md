@@ -39,6 +39,7 @@ LalaTube/
 │   ├── balonku.mp4             -> kanal "Lagu Anak"
 │   └── cicak.mp4
 ├── Kartun/
+│   ├── Kartun.jpg              -> foto profil (avatar) kanal "Kartun"
 │   ├── upin.mp4                -> kanal "Kartun"
 │   ├── upin.jpg                -> poster/thumbnail untuk upin.mp4
 │   └── Ipin/
@@ -55,6 +56,10 @@ Aturan penamaan:
 - **Poster (opsional)**: letakkan file gambar dengan nama sama di samping video,
   mis. `upin.mp4` + `upin.jpg`. Kalau tidak ada, thumbnail dibuat otomatis dari
   detik pertama video.
+- **Foto profil kanal (opsional)**: letakkan satu gambar di dalam folder kanal dengan
+  nama sama seperti nama foldernya, mis. `Kartun/Kartun.jpg`. Nama umum seperti
+  `avatar.jpg`, `kanal.png`, atau `logo.webp` juga diterima. Kalau tidak ada, avatar
+  memakai inisial huruf seperti biasa.
 
 Format video yang didukung: **MP4, MKV, WEBM, AVI, MOV, M4V, TS, 3GP, FLV, WMV**
 (dan format lain yang dikenali pemutar Android). Poster: **JPG, PNG, WEBP**.
