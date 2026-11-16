@@ -165,6 +165,48 @@ Hasil: `app/build/outputs/apk/debug/app-debug.apk`.
 
 ---
 
+## Merilis Versi Baru
+
+APK **tidak disimpan di dalam repo** (folder `dist/` diabaikan git). Setiap rilis
+diunggah manual ke halaman
+[Releases](https://github.com/prabowoadhy/lala-tube/releases).
+
+1. Naikkan versi di `app/build.gradle.kts` — `versionCode` wajib selalu bertambah,
+   `versionName` adalah nomor yang dilihat pengguna:
+   ```kotlin
+   versionCode = 6
+   versionName = "1.0.5"
+   ```
+2. Bangun dan uji:
+   ```powershell
+   .\gradlew.bat :app:testDebugUnitTest :app:assembleDebug
+   ```
+3. Salin APK ke `dist/` sebagai arsip lokal (opsional):
+   ```powershell
+   Copy-Item app\build\outputs\apk\debug\app-debug.apk dist\LalaTube-1.0.5-debug.apk
+   ```
+4. Commit lalu push:
+   ```powershell
+   git add -A
+   git commit -m "LalaTube 1.0.5: ..."
+   git push origin main
+   ```
+5. Publish rilis beserta APK-nya:
+   ```powershell
+   gh release create v1.0.5 dist\LalaTube-1.0.5-debug.apk `
+     --title "LalaTube 1.0.5" --notes "Perubahan: ..."
+   ```
+   Bisa juga lewat web: buka
+   <https://github.com/prabowoadhy/lala-tube/releases/new>, pilih tag `v1.0.5`
+   (buat baru), lampirkan APK, lalu **Publish release**.
+
+> **Penting:** rilis baru hanya muncul di sidebar *Releases* setelah langkah 5
+> selesai. Push tag saja tidak cukup — tag tanpa rilis hanya tercatat di daftar
+> Tags. Selalu build di komputer yang sama agar tanda tangan APK konsisten dan
+> pembaruan bisa menimpa versi lama di head unit.
+
+---
+
 ## Struktur Singkat
 
 ```
