@@ -48,3 +48,20 @@ fun progressDescription(positionMs: Long, durationMs: Long): String {
     val remaining = (durationMs - positionMs).coerceAtLeast(0L)
     return "Sisa ${formatDuration(remaining)}"
 }
+
+/**
+ * Nama codec yang ramah dibaca dari MIME track video. Dipakai untuk memberi tahu
+ * pengguna saat sebuah video hanya bisa didekode lewat CPU (software).
+ */
+fun codecLabel(mime: String): String = when (mime) {
+    "video/av01" -> "AV1"
+    "video/avc" -> "H.264"
+    "video/hevc" -> "H.265"
+    "video/x-vnd.on2.vp9", "video/vp9" -> "VP9"
+    "video/x-vnd.on2.vp8", "video/vp8" -> "VP8"
+    "video/mp4v-es" -> "MPEG-4"
+    "video/3gpp" -> "H.263"
+    "" -> ""
+    else -> mime.removePrefix("video/").uppercase(Locale.US)
+}
+

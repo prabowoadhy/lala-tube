@@ -34,6 +34,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.Fullscreen
+import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -57,6 +58,7 @@ import com.lalatube.offline.ui.components.DurationBadge
 import com.lalatube.offline.ui.components.VideoThumbnail
 import com.lalatube.offline.ui.components.WatchProgressBar
 import com.lalatube.offline.ui.theme.YouTubeRed
+import com.lalatube.offline.util.codecLabel
 import com.lalatube.offline.util.formatDuration
 
 /**
@@ -187,6 +189,10 @@ fun WatchLayout(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    if (video.softwareOnly) {
+                        Spacer(Modifier.height(10.dp))
+                        SoftwareCodecNotice(video.codecMime)
+                    }
                     Spacer(Modifier.height(8.dp))
                 }
 
@@ -199,6 +205,48 @@ fun WatchLayout(
                         .fillMaxHeight(),
                 )
             }
+        }
+    }
+}
+
+/**
+ * Catatan pada halaman tonton saat codec video hanya bisa didekode lewat CPU.
+ * Ini penyebab umum pemutaran patah-patah di head unit.
+ */
+@Composable
+private fun SoftwareCodecNotice(codecMime: String) {
+    val label = codecLabel(codecMime).ifBlank { "codec ini" }
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.Top,
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.Warning,
+            contentDescription = null,
+            tint = Color(0xFFB26A00),
+            modifier = Modifier.size(20.dp),
+        )
+        Spacer(Modifier.width(10.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = "Codec $label tanpa dukungan hardware",
+                style = MaterialTheme.typography.titleSmall.copy(
+                    fontWeight = FontWeight.SemiBold,
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = "Head unit ini tidak punya pemutar $label khusus, jadi video " +
+                    "didekode lewat CPU dan bisa terasa patah-patah. Paling lancar: " +
+                    "ubah file ke MP4 H.264 (misalnya 720p atau 1080p).",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

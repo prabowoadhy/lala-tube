@@ -43,6 +43,7 @@ import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material.icons.rounded.MoreVert
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.VideoLibrary
+import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material.icons.rounded.WifiOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.DropdownMenu
@@ -73,6 +74,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lalatube.offline.data.Video
 import com.lalatube.offline.ui.theme.YouTubeRed
+import com.lalatube.offline.util.codecLabel
 import com.lalatube.offline.util.formatDuration
 import com.lalatube.offline.util.progressDescription
 import com.lalatube.offline.util.relativeDate
@@ -189,6 +191,38 @@ fun DurationBadge(
     }
 }
 
+/**
+ * Penanda kecil di pojok thumbnail untuk video yang hanya bisa didekode lewat CPU.
+ * Head unit yang lemah akan memutar video seperti ini secara patah-patah.
+ */
+@Composable
+fun SoftwareCodecBadge(
+    codecMime: String,
+    modifier: Modifier = Modifier,
+) {
+    val label = codecLabel(codecMime).ifBlank { "Codec" }
+    Row(
+        modifier = modifier
+            .background(Color.Black.copy(alpha = 0.72f), RoundedCornerShape(5.dp))
+            .padding(horizontal = 6.dp, vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(3.dp),
+    ) {
+        Icon(
+            imageVector = Icons.Rounded.Warning,
+            contentDescription = null,
+            tint = Color(0xFFFFC107),
+            modifier = Modifier.size(12.dp),
+        )
+        Text(
+            text = label,
+            color = Color.White,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
+}
+
 @Composable
 fun WatchProgressBar(
     fraction: Float,
@@ -271,6 +305,14 @@ fun VideoCard(
                         .align(Alignment.TopEnd)
                         .padding(8.dp)
                         .size(18.dp),
+                )
+            }
+            if (video.softwareOnly) {
+                SoftwareCodecBadge(
+                    codecMime = video.codecMime,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(7.dp),
                 )
             }
             DurationBadge(
@@ -410,6 +452,14 @@ fun WideVideoCard(
                 title = video.title,
                 modifier = Modifier.fillMaxSize(),
             )
+            if (video.softwareOnly) {
+                SoftwareCodecBadge(
+                    codecMime = video.codecMime,
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(7.dp),
+                )
+            }
             DurationBadge(
                 text = formatDuration(video.durationMs),
                 modifier = Modifier

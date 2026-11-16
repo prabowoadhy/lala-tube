@@ -93,7 +93,7 @@ Cocok untuk head unit yang membatasi akses folder.
 | **Beranda** | Video terbaru, filter per kanal |
 | **Favorit** | Video yang ditandai bintang |
 | **Riwayat** | Video yang pernah/sedang ditonton |
-| **Pengaturan** | Ganti folder, pindai ulang, tema, mode aman |
+| **Pengaturan** | Ganti folder, pindai ulang, tema, mode aman, cek codec |
 | **Cari** | Mencari judul video dan kanal |
 
 Di halaman tonton:
@@ -132,6 +132,8 @@ Arahkan fokus dengan tombol panah, tekan **OK/Enter** untuk memilih,
   sama dipilih lagi.
 - **Mode aman** — melewati pembuatan thumbnail. Aktifkan jika aplikasi terasa berat
   atau sering berhenti saat memindai banyak video.
+- **Kompatibilitas codec** — memeriksa codec setiap video dan memberi tahu jika ada
+  video yang hanya bisa didekode lewat CPU (penyebab pemutaran patah-patah).
 - **Tema** — Terang, Gelap, atau Ikuti sistem.
 
 ---
@@ -149,6 +151,28 @@ masalah terakhir**, lengkap dengan tombol untuk menghapusnya.
 | Flashdisk tidak terdeteksi | Cabut dan colok ulang, lalu buka pemilih folder lagi |
 | Aplikasi berat saat memindai | Aktifkan **Mode aman**, lalu pindai ulang |
 | Thumbnail hitam | Normal untuk sebagian video; video tetap bisa diputar |
+| **Video patah-patah** | Lihat bagian di bawah 👇 |
+
+### Video patah-patah (codec AV1 / H.265)
+
+Penyebab paling umum pemutaran tersendat **bukan** aplikasi, melainkan **codec video**
+yang tidak didukung hardware head unit. Head unit kelas Allwinner T527 misalnya
+memutar MP4 **H.264** langsung dengan chip khusus (lancar), tetapi file **AV1** besar
+(apalagi 4K) hanya bisa didekode lewat CPU sehingga gambar patah-patah, walaupun
+audio tetap jalan.
+
+Cara mengetahui dan mengatasinya:
+
+1. Buka **Pengaturan → Kompatibilitas codec**. Bagian ini menunjukkan jumlah video
+   yang memakai codec tanpa dukungan hardware beserta judulnya.
+2. Di daftar video, video seperti ini diberi **penanda peringatan ⚠** di pojok
+   thumbnail (mis. `AV1`). Penjelasan juga muncul di halaman tonton.
+3. Ubah file tersebut ke **MP4 H.264** (720p atau 1080p) memakai aplikasi konversi
+   video gratis di komputer (mis. HandBrake), lalu **Pindai ulang**.
+
+Head unit 2000×1200 juga tidak butuh video 4K — 1080p sudah lebih dari cukup dan
+lebih hemat memori, sehingga jauh lebih lancar.
+
 
 ---
 

@@ -10,6 +10,10 @@ data class Video(
     val lastModified: Long = 0L,
     val width: Int = 0,
     val height: Int = 0,
+    /** MIME track video, misalnya `video/av01` (AV1) atau `video/avc` (H.264). */
+    val codecMime: String = "",
+    /** true kalau head unit tidak punya decoder hardware untuk codec ini. */
+    val softwareOnly: Boolean = false,
     val thumbnailPath: String? = null,
     val positionMs: Long = 0L,
     val lastPlayedAt: Long = 0L,

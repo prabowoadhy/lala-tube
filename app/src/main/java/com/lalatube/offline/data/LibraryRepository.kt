@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.media.MediaCodecList
 import android.media.MediaExtractor
 import android.media.MediaFormat
 import android.media.MediaMetadataRetriever
@@ -62,6 +63,16 @@ class LibraryRepository(private val context: Context) {
     private val libraryFile = File(context.filesDir, "library.json")
     private val thumbDir = File(context.cacheDir, "thumbs").apply { mkdirs() }
     private val writeMutex = Mutex()
+
+    /** Daftar codec sistem, dibangun sekali lalu dipakai ulang saat memindai. */
+    private val codecList by lazy {
+        runCatching { MediaCodecList(MediaCodecList.REGULAR_CODECS) }.getOrNull()
+    }
+    private val codecInfoByName by lazy {
+        codecList?.codecInfos
+            ?.associateBy { it.name.lowercase() }
+            .orEmpty()
+    }
 
     var treeUri: Uri? = prefs.getString(KEY_TREE_URI, null)?.let(Uri::parse)
         private set
@@ -282,6 +293,7 @@ class LibraryRepository(private val context: Context) {
             val cacheValid = previous != null &&
                 previous.lastModified == item.lastModified &&
                 previous.sizeBytes == item.size &&
+                previous.codecMime.isNotBlank() &&
                 (previous.thumbnailPath == null || File(previous.thumbnailPath).exists())
 
             val video = if (previous != null && cacheValid) {
@@ -538,6 +550,8 @@ class LibraryRepository(private val context: Context) {
             lastModified = item.lastModified,
             width = previous?.width ?: 0,
             height = previous?.height ?: 0,
+            codecMime = previous?.codecMime.orEmpty(),
+            softwareOnly = previous?.softwareOnly ?: false,
             thumbnailPath = existingThumb,
             positionMs = previous?.positionMs ?: 0L,
             lastPlayedAt = previous?.lastPlayedAt ?: 0L,
@@ -558,6 +572,8 @@ class LibraryRepository(private val context: Context) {
             durationMs = metadata.durationMs.takeIf { it > 0L } ?: base.durationMs,
             width = metadata.width.takeIf { it > 0 } ?: base.width,
             height = metadata.height.takeIf { it > 0 } ?: base.height,
+            codecMime = metadata.codecMime.ifBlank { base.codecMime },
+            softwareOnly = metadata.softwareOnly,
             thumbnailPath = thumbnail,
             positionMs = previous?.positionMs ?: base.positionMs,
             lastPlayedAt = previous?.lastPlayedAt ?: base.lastPlayedAt,
@@ -571,6 +587,8 @@ class LibraryRepository(private val context: Context) {
         val durationMs: Long,
         val width: Int,
         val height: Int,
+        val codecMime: String = "",
+        val softwareOnly: Boolean = false,
     )
 
     /**
@@ -582,6 +600,7 @@ class LibraryRepository(private val context: Context) {
         var durationMs = 0L
         var width = 0
         var height = 0
+        var codecMime = ""
         runCatching {
             openDescriptor(item)?.use { pfd ->
                 val extractor = MediaExtractor()
@@ -593,6 +612,7 @@ class LibraryRepository(private val context: Context) {
                         val mime = runCatching { format.getString(MediaFormat.KEY_MIME) }
                             .getOrNull() ?: continue
                         if (!mime.startsWith("video/")) continue
+                        codecMime = mime
                         if (format.containsKey(MediaFormat.KEY_DURATION)) {
                             val value = runCatching {
                                 format.getLong(MediaFormat.KEY_DURATION)
@@ -622,8 +642,29 @@ class LibraryRepository(private val context: Context) {
                 }
             }
         }
-        return VideoMetadata(durationMs, width, height)
+        val softwareOnly = codecMime.isNotBlank() &&
+            !hasHardwareDecoder(codecMime, width, height)
+        return VideoMetadata(durationMs, width, height, codecMime, softwareOnly)
     }
+
+    /**
+     * Apakah head unit punya decoder yang dipercepat hardware untuk codec ini.
+     * Video AV1/VP9 yang besar sering hanya punya decoder software (c2.android.*),
+     * dan itu penyebab utama pemutaran patah-patah di SoC hemat daya.
+     */
+    private fun hasHardwareDecoder(mime: String, width: Int, height: Int): Boolean = runCatching {
+        val list = codecList ?: return@runCatching false
+        if (width <= 0 || height <= 0) return@runCatching false
+        val format = MediaFormat.createVideoFormat(mime, width, height)
+        val decoderName = list.findDecoderForFormat(format) ?: return@runCatching false
+        val info = codecInfoByName[decoderName.lowercase()] ?: return@runCatching false
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            info.isHardwareAccelerated
+        } else {
+            !info.name.startsWith("OMX.google.", ignoreCase = true) &&
+                !info.name.startsWith("c2.android.", ignoreCase = true)
+        }
+    }.getOrDefault(false)
 
     private fun createThumbnail(item: FoundFile, durationMs: Long): String? {
         val filename = "thumb_${shortHash(item.uri.toString())}_${item.lastModified}.jpg"
@@ -792,6 +833,8 @@ class LibraryRepository(private val context: Context) {
                     lastModified = json.optLong("lastModified", 0L),
                     width = json.optInt("width", 0),
                     height = json.optInt("height", 0),
+                    codecMime = json.optString("codec").takeIf { it.isNotBlank() }.orEmpty(),
+                    softwareOnly = json.optBoolean("softwareOnly", false),
                     thumbnailPath = json.optString("thumbnail").takeIf { it.isNotBlank() },
                     positionMs = json.optLong("position", 0L),
                     lastPlayedAt = json.optLong("lastPlayedAt", 0L),
@@ -819,6 +862,8 @@ class LibraryRepository(private val context: Context) {
                         put("lastModified", video.lastModified)
                         put("width", video.width)
                         put("height", video.height)
+                        put("codec", video.codecMime)
+                        put("softwareOnly", video.softwareOnly)
                         put("thumbnail", video.thumbnailPath ?: "")
                         put("position", video.positionMs)
                         put("lastPlayedAt", video.lastPlayedAt)

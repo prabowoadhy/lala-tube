@@ -29,6 +29,7 @@ import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Security
 import androidx.compose.material.icons.rounded.VideoLibrary
+import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material.icons.rounded.WifiOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -50,12 +51,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.lalatube.offline.UiState
 import com.lalatube.offline.data.ThemeMode
 import com.lalatube.offline.ui.components.OfflineBadge
+import com.lalatube.offline.util.codecLabel
 import com.lalatube.offline.util.relativeDate
 
 @Composable
@@ -72,6 +76,13 @@ fun SettingsScreen(
 ) {
     var confirmForget by remember { mutableStateOf(false) }
     var showCrashDetail by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val appVersion = remember {
+        runCatching {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionName
+        }.getOrNull().orEmpty()
+    }
+    val softwareVideos = state.videos.filter { it.softwareOnly }
 
     Column(
         modifier = modifier
@@ -263,6 +274,78 @@ fun SettingsScreen(
             )
         }
 
+        Spacer(Modifier.height(16.dp))
+        SettingsCard {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Rounded.Warning,
+                    contentDescription = null,
+                    tint = if (softwareVideos.isEmpty()) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        Color(0xFFB26A00)
+                    },
+                    modifier = Modifier.size(22.dp),
+                )
+                Spacer(Modifier.width(9.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Kompatibilitas codec",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                    )
+                    Text(
+                        text = if (state.videos.isEmpty()) {
+                            "Pindai folder dulu untuk memeriksa codec video."
+                        } else if (softwareVideos.isEmpty()) {
+                            "Semua ${state.videos.size} video memakai codec yang didukung hardware " +
+                                "head unit. Pemutaran akan lancar."
+                        } else {
+                            "${softwareVideos.size} dari ${state.videos.size} video memakai codec " +
+                                "yang tidak didukung hardware."
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            if (softwareVideos.isNotEmpty()) {
+                Spacer(Modifier.height(10.dp))
+                softwareVideos.take(4).forEach { video ->
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = codecLabel(video.codecMime).ifBlank { "?" },
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = Color(0xFFB26A00),
+                            modifier = Modifier.width(46.dp),
+                        )
+                        Text(
+                            text = video.title,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    Spacer(Modifier.height(3.dp))
+                }
+                if (softwareVideos.size > 4) {
+                    Text(
+                        text = "+ ${softwareVideos.size - 4} video lainnya",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(Modifier.height(6.dp))
+                }
+                Text(
+                    text = "Video seperti ini didekode lewat CPU sehingga bisa patah-patah, " +
+                        "terutama yang 4K. Paling lancar: ubah file ke MP4 H.264 " +
+                        "(720p atau 1080p) memakai aplikasi konversi video di komputer.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+
         if (state.crashReport != null) {
             Spacer(Modifier.height(16.dp))
             SettingsCard {
@@ -338,7 +421,11 @@ fun SettingsScreen(
             )
             Spacer(Modifier.height(14.dp))
             Text(
-                text = "LalaTube 1.0.1 • dibuat untuk menonton bersama anak",
+                text = if (appVersion.isNotBlank()) {
+                    "LalaTube $appVersion • dibuat untuk menonton bersama anak"
+                } else {
+                    "Dibuat untuk menonton bersama anak"
+                },
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

@@ -1,6 +1,7 @@
 package com.lalatube.offline
 
 import com.lalatube.offline.data.friendlyTitle
+import com.lalatube.offline.util.codecLabel
 import com.lalatube.offline.util.formatDuration
 import com.lalatube.offline.util.formatFileSize
 import org.junit.Assert.assertEquals
@@ -32,5 +33,15 @@ class FormatTest {
             friendlyTitle("Wheels on the Bus (1080p).mp4"),
         )
         assertEquals("Video Seru", friendlyTitle("Video_Seru.mkv"))
+    }
+
+    @Test
+    fun codecMimesGetFriendlyNames() {
+        assertEquals("AV1", codecLabel("video/av01"))
+        assertEquals("H.264", codecLabel("video/avc"))
+        assertEquals("H.265", codecLabel("video/hevc"))
+        assertEquals("VP9", codecLabel("video/x-vnd.on2.vp9"))
+        assertEquals("", codecLabel(""))
+        assertEquals("X-FOO", codecLabel("video/x-foo"))
     }
 }
