@@ -17,5 +17,5 @@ opencode.json
 *.keystore
 *.jks
 
-# Screenshot hasil uji (artefak, bukan bagian aplikasi).
-dist/*.png
+# Artefak hasil uji & rilis (screenshot, APK). APK diunggah manual, bukan via git.
+dist/

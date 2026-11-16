@@ -12,10 +12,14 @@ dirancang agar anak bisa menonton video langsung dari **flashdisk tanpa internet
 
 ## Cara Pasang
 
-1. Salin `dist/LalaTube-1.0.2-debug.apk` ke flashdisk.
+1. Unduh APK rilis terbaru dari halaman **Releases**
+   (<https://github.com/prabowoadhy/lala-tube/releases>), lalu salin ke flashdisk.
 2. Di head unit, buka aplikasi File Manager, ketuk APK tersebut, lalu pilih **Instal**.
    Jika muncul peringatan, aktifkan **Instal dari sumber tidak dikenal** untuk File Manager.
 3. Buka **LalaTube**.
+
+> APK tidak disimpan di dalam repo ini. Folder `dist/` hanya dipakai di komputer
+> pengembang untuk menaruh hasil build sebelum diunggah ke halaman Releases.
 
 > Saat pertama dibuka, aplikasi akan meminta izin membaca foto/video. Pilih **Allow**
 > (Izinkan). Tanpa izin ini daftar folder akan terlihat kosong.
