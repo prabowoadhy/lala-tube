@@ -22,6 +22,10 @@ import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Home
@@ -87,14 +91,37 @@ private object Tabs {
 private data class NavDestination(
     val tab: String,
     val label: String,
+    /** Ikon saat menu tidak dipilih: tanpa isi (garis). */
     val icon: ImageVector,
+    /** Ikon saat menu aktif: terisi penuh. */
+    val activeIcon: ImageVector,
 )
 
 private val destinations = listOf(
-    NavDestination(Tabs.HOME, "Beranda", Icons.Rounded.Home),
-    NavDestination(Tabs.FAVORITES, "Favorit", Icons.Rounded.Favorite),
-    NavDestination(Tabs.HISTORY, "Riwayat", Icons.Rounded.History),
-    NavDestination(Tabs.SETTINGS, "Pengaturan", Icons.Rounded.Settings),
+    NavDestination(
+        Tabs.HOME,
+        "Beranda",
+        Icons.Outlined.Home,
+        Icons.Rounded.Home,
+    ),
+    NavDestination(
+        Tabs.FAVORITES,
+        "Favorit",
+        Icons.Outlined.FavoriteBorder,
+        Icons.Rounded.Favorite,
+    ),
+    NavDestination(
+        Tabs.HISTORY,
+        "Riwayat",
+        Icons.Outlined.History,
+        Icons.Rounded.History,
+    ),
+    NavDestination(
+        Tabs.SETTINGS,
+        "Pengaturan",
+        Icons.Outlined.Settings,
+        Icons.Rounded.Settings,
+    ),
 )
 
 @Composable
@@ -495,7 +522,13 @@ private fun AppBottomBar(
                         verticalArrangement = Arrangement.Center,
                     ) {
                         Icon(
-                            imageVector = destination.icon,
+                            // Tidak dipilih = ikon garis (nofill); dipilih =
+                            // ikon terisi penuh, sama seperti YouTube.
+                            imageVector = if (active) {
+                                destination.activeIcon
+                            } else {
+                                destination.icon
+                            },
                             contentDescription = null,
                             tint = if (active) {
                                 MaterialTheme.colorScheme.onSurface

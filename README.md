@@ -155,8 +155,9 @@ mengikuti susunan kanal YouTube:
   Warna teks **"LalaTube"** memakai hitam lembut `#212121` dengan bayangan tipis,
   bukan hitam pekat, mengikuti warna judul YouTube di aplikasi Android.
 - Menu **Beranda / Favorit / Riwayat / Pengaturan** berada di tengah bawah
-  layar, sama seperti aplikasi YouTube Android. Di halaman tonton menu ini
-  disembunyikan agar pemutar penuh dari sudut kiri atas.
+  layar, sama seperti aplikasi YouTube Android. Ikonnya **garis (tanpa isi)** saat
+  menu tidak dipilih dan **terisi penuh hitam** saat menu itu aktif. Di halaman
+  tonton menu ini disembunyikan agar pemutar penuh dari sudut kiri atas.
 - **Status bar dan tombol navigasi Android** (Back/Home/Recent atau gesture
   pill) tetap terlihat seperti YouTube di head unit. Konten halaman beranda,
   favorit, riwayat, dan pengaturan diberi jarak aman supaya tidak tertutup
