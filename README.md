@@ -104,12 +104,29 @@ Cocok untuk head unit yang membatasi akses folder.
 Di halaman tonton:
 
 - Pemutar di kiri, informasi video di bawahnya, rekomendasi di samping kanan.
+- **Status bar berwarna hitam** dengan ikon putih di halaman tonton (sama seperti
+  YouTube), sedangkan beranda dan halaman kanal tetap putih mengikuti tema terang.
 - Header aplikasi disembunyikan di halaman tonton, seperti YouTube. Tombol
   **Kembali** dan **Layar penuh** muncul di overlay pemutar saat layar disentuh.
 - **Layar penuh** untuk mode bioskop.
 - Video berikutnya diputar otomatis.
 - Posisi tontonan disimpan; menonton lagi melanjutkan dari titik terakhir.
-- Tombol **Favorit** menandai video.
+- Tombol **Favorit** menandai video di samping tombol **Layar penuh**, keduanya
+  terlihat tanpa perlu menggulir.
+- Avatar dan nama kanal di halaman tonton bisa diketuk untuk membuka halaman kanal.
+
+### Halaman kanal
+
+Ketuk avatar atau nama kanal di halaman tonton untuk membuka halaman kanalnya,
+mengikuti susunan kanal YouTube:
+
+- Bar atas: **Kembali**, **Cari**, dan **Pindai ulang**.
+- Banner kanal selebar layar, lalu avatar besar, nama kanal, jumlah video, dan
+  keterangan singkat.
+- Tombol hitam **Putar semua** memutar seluruh video kanal berurutan dan
+  **otomatis lanjut** ke video berikutnya.
+- Tab **Video** dengan garis bawah, lalu grid berisi semua video dari folder
+  kanal tersebut (terbaru lebih dulu).
 
 ### Tampilan mengikuti ukuran layar
 
@@ -127,7 +144,8 @@ Di halaman tonton:
   sama. Favorit, riwayat, dan **Lanjutkan menonton** tidak ikut diacak.
 - Kartu di beranda dimuat **bertahap 15 per batch**. Gulir sampai bawah untuk
   memuat batch berikutnya, sehingga koleksi 100+ video tetap ringan.
-- Header atas selalu tampil dengan logo dan judul selebar aplikasi YouTube.
+- Header atas selalu tampil dengan logo dan judul selebar aplikasi YouTube, dengan
+  tinggi 48dp supaya deretan tombol kanal di bawahnya lebih rapat ke atas.
 - Menu **Beranda / Favorit / Riwayat / Pengaturan** berada di tengah bawah
   layar, sama seperti aplikasi YouTube Android. Di halaman tonton menu ini
   disembunyikan agar pemutar penuh dari sudut kiri atas.

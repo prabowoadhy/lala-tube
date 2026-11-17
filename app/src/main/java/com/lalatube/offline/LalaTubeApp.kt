@@ -67,6 +67,7 @@ import com.lalatube.offline.data.StorageAccess
 import com.lalatube.offline.data.ThemeMode
 import com.lalatube.offline.data.Video
 import com.lalatube.offline.ui.components.LalaTubeLogo
+import com.lalatube.offline.ui.screens.ChannelScreen
 import com.lalatube.offline.ui.screens.FavoritesScreen
 import com.lalatube.offline.ui.screens.FolderPickerScreen
 import com.lalatube.offline.ui.screens.HistoryScreen
@@ -104,6 +105,7 @@ fun LalaTubeApp(viewModel: MainViewModel) {
     var pickerOpen by rememberSaveable { mutableStateOf(false) }
     var playerId by rememberSaveable { mutableStateOf<String?>(null) }
     var playerFullscreen by rememberSaveable { mutableStateOf(false) }
+    var channelName by rememberSaveable { mutableStateOf<String?>(null) }
     var playerQueue by remember { mutableStateOf<List<String>>(emptyList()) }
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
@@ -148,6 +150,11 @@ fun LalaTubeApp(viewModel: MainViewModel) {
         playerId = video.uri
     }
 
+    // Buka halaman kanal dari halaman tonton (avatar / nama kanal diketuk).
+    val openChannel: (String) -> Unit = { channel ->
+        channelName = channel
+    }
+
     val activeVideo = playerId?.let { id -> state.videos.firstOrNull { it.uri == id } }
     val queueFromSelection = playerQueue
         .mapNotNull { id -> state.videos.firstOrNull { it.uri == id } }
@@ -159,6 +166,9 @@ fun LalaTubeApp(viewModel: MainViewModel) {
 
     BackHandler(enabled = pickerOpen) { pickerOpen = false }
     BackHandler(enabled = !pickerOpen && activeVideo == null && searchOpen) { searchOpen = false }
+    BackHandler(
+        enabled = !pickerOpen && activeVideo == null && !searchOpen && channelName != null,
+    ) { channelName = null }
     BackHandler(enabled = !pickerOpen && activeVideo == null && !searchOpen && tab != Tabs.HOME) {
         tab = Tabs.HOME
     }
@@ -223,6 +233,13 @@ fun LalaTubeApp(viewModel: MainViewModel) {
                         },
                         onProgress = viewModel::updateProgress,
                         onToggleFavorite = { viewModel.toggleFavorite(activeVideo.uri) },
+                        onOpenChannel = { channel ->
+                            // Pindah ke halaman kanal; pemutar ditutup tetapi
+                            // posisi tontonan tetap disimpan saat keluar.
+                            playerId = null
+                            playerFullscreen = false
+                            channelName = channel
+                        },
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
@@ -256,6 +273,41 @@ fun LalaTubeApp(viewModel: MainViewModel) {
                                 onBack = { searchOpen = false },
                                 modifier = Modifier.fillMaxSize(),
                             )
+                        } else if (channelName != null) {
+                            Column(modifier = Modifier.fillMaxSize()) {
+                                ChannelScreen(
+                                    channel = channelName!!,
+                                    videos = state.videos.filter {
+                                        it.channel == channelName
+                                    },
+                                    onPlayAll = {
+                                        val list = state.videos
+                                            .filter { it.channel == channelName }
+                                            .sortedWith(
+                                                compareByDescending<Video> { it.addedAt }
+                                                    .thenByDescending { it.lastModified },
+                                            )
+                                        list.firstOrNull()?.let { first ->
+                                            openPlayer(first, list)
+                                        }
+                                    },
+                                    onPlay = openPlayer,
+                                    onToggleFavorite = {
+                                        viewModel.toggleFavorite(it.uri)
+                                    },
+                                    onSearch = { searchOpen = true },
+                                    onRefresh = viewModel::rescan,
+                                    onBack = { channelName = null },
+                                    modifier = Modifier.weight(1f),
+                                )
+                                AppBottomBar(
+                                    selected = Tabs.HOME,
+                                    onSelect = {
+                                        channelName = null
+                                        tab = it
+                                    },
+                                )
+                            }
                         } else {
                             Column(modifier = Modifier.fillMaxSize()) {
                                 Column {
@@ -355,7 +407,7 @@ private fun AppTopBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(64.dp)
+                .height(48.dp)
                 .padding(start = 24.dp, end = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {

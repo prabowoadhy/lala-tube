@@ -73,6 +73,7 @@ fun WatchLayout(
     onPlayVideo: (Video) -> Unit,
     onToggleFavorite: () -> Unit,
     onFullscreen: () -> Unit,
+    onOpenChannel: (String) -> Unit,
     playerStage: @Composable (Modifier) -> Unit,
 ) {
     // Status bar atas + navigation bar bawah harus tetap terlihat seperti YouTube.
@@ -86,19 +87,25 @@ fun WatchLayout(
         WindowInsets.navigationBars.getBottom(this).toDp()
     }
 
-    BoxWithConstraints(
+    // Latar hitam di belakang status bar: YouTube memakai status bar hitam
+    // (ikon putih) di halaman tonton, tetapi beranda/kanal tetap putih.
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-            .padding(top = statusBarTop),
+            .background(Color.Black),
     ) {
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = statusBarTop)
+                .background(MaterialTheme.colorScheme.background),
+        ) {
         val sidebarWidth = if (maxWidth >= 1000.dp) 360.dp else 300.dp
         // Lebar video mengikuti kolom kiri agar menempel ke tepi layar, tetapi
-        // tingginya dibatasi supaya judul & kanal tetap terlihat di layar pendek.
+        // tingginya dibatasi sekitar 58% tinggi layar seperti YouTube, supaya
+        // judul, kanal, dan tombol Favorit/Layar penuh terlihat tanpa menggulir.
         val contentWidth = (maxWidth - sidebarWidth - 1.dp).coerceAtLeast(160.dp)
-        val maxVideoHeight = (maxHeight - 128.dp).coerceAtLeast(90.dp)
-        val videoWidth = minOf(contentWidth, maxVideoHeight * 16f / 9f)
-        val videoHeight = videoWidth * 9f / 16f
+        val videoHeight = minOf(contentWidth * 9f / 16f, maxHeight * 0.58f)
 
         Row(modifier = Modifier.fillMaxSize()) {
             Column(
@@ -107,10 +114,11 @@ fun WatchLayout(
                     .fillMaxHeight(),
             ) {
                 // Seperti YouTube: pemutar menempel ke tepi atas & kiri layar,
-                // tanpa padding dan tanpa sudut membulat.
+                // tanpa padding dan tanpa sudut membulat. Video 16:9 di dalamnya
+                // diberi bilah hitam di sisi saat kotak lebih lebar.
                 playerStage(
                     Modifier
-                        .width(videoWidth)
+                        .fillMaxWidth()
                         .height(videoHeight),
                 )
 
@@ -136,24 +144,58 @@ fun WatchLayout(
                     Spacer(Modifier.height(10.dp))
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        ChannelAvatar(channel = video.channel, size = 38, avatarPath = video.channelAvatarPath)
-                        Spacer(Modifier.width(10.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = video.channel,
-                                style = MaterialTheme.typography.titleSmall.copy(
-                                    fontWeight = FontWeight.SemiBold,
-                                ),
-                                color = MaterialTheme.colorScheme.onSurface,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
+                        // Avatar + nama kanal bisa diketuk untuk membuka halaman
+                        // kanal (seluruh video di folder kanal itu).
+                        val channelInteraction = remember { MutableInteractionSource() }
+                        val channelFocused by channelInteraction.collectIsFocusedAsState()
+                        val channelShape = RoundedCornerShape(8.dp)
+                        // weight(1f) penting: tanpa ini baris kanal (yang punya
+                        // teks weight(1f) di dalamnya) memakan seluruh lebar
+                        // sehingga tombol Favorit/Layar penuh terjepit, teksnya
+                        // membungkus ke bawah, dan barisnya jadi sangat tinggi.
+                        Row(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(channelShape)
+                                .background(
+                                    if (channelFocused) {
+                                        MaterialTheme.colorScheme.surfaceContainer
+                                    } else {
+                                        androidx.compose.ui.graphics.Color.Transparent
+                                    },
+                                )
+                                .clickable(
+                                    interactionSource = channelInteraction,
+                                    indication = LocalIndication.current,
+                                    onClick = { onOpenChannel(video.channel) },
+                                )
+                                .padding(horizontal = 6.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            ChannelAvatar(
+                                channel = video.channel,
+                                size = 38,
+                                avatarPath = video.channelAvatarPath,
                             )
-                            Text(
-                                text = "${formatDuration(video.durationMs)} • offline",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                            Spacer(Modifier.width(10.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = video.channel,
+                                    style = MaterialTheme.typography.titleSmall.copy(
+                                        fontWeight = FontWeight.SemiBold,
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                                Text(
+                                    text = "${formatDuration(video.durationMs)} • offline",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
+                        Spacer(Modifier.width(8.dp))
                         FilledTonalButton(onClick = onToggleFavorite) {
                             Icon(
                                 imageVector = if (video.favorite) Icons.Rounded.Favorite
@@ -201,6 +243,7 @@ fun WatchLayout(
                     .width(sidebarWidth)
                     .fillMaxHeight(),
             )
+        }
         }
     }
 }

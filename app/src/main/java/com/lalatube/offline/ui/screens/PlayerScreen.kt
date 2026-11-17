@@ -101,6 +101,7 @@ fun PlayerScreen(
     onPlayVideo: (Video) -> Unit,
     onProgress: (uri: String, positionMs: Long, completed: Boolean) -> Unit,
     onToggleFavorite: () -> Unit,
+    onOpenChannel: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -194,6 +195,18 @@ fun PlayerScreen(
         } else {
             controller.show(WindowInsetsCompat.Type.systemBars())
             controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
+        }
+    }
+
+    // Halaman tonton memakai status bar hitam (seperti YouTube), jadi ikon
+    // status bar dibuat putih selama halaman ini terbuka lalu dikembalikan.
+    DisposableEffect(view) {
+        val window = (context as? android.app.Activity)?.window
+        val controller = window?.let { WindowCompat.getInsetsController(it, view) }
+        val previous = controller?.isAppearanceLightStatusBars
+        controller?.isAppearanceLightStatusBars = false
+        onDispose {
+            if (previous != null) controller.isAppearanceLightStatusBars = previous
         }
     }
 
@@ -590,6 +603,7 @@ fun PlayerScreen(
             onPlayVideo = onPlayVideo,
             onToggleFavorite = onToggleFavorite,
             onFullscreen = { onFullscreenChange(true) },
+            onOpenChannel = onOpenChannel,
             playerStage = playerStage,
         )
     }

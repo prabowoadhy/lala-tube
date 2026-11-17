@@ -54,10 +54,12 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -183,7 +185,7 @@ fun ChannelAvatar(
     }
 }
 
-private fun channelColor(channel: String): Color {
+fun channelColor(channel: String): Color {
     val palette = listOf(
         Color(0xFFB3261E),
         Color(0xFF7D5260),
@@ -550,10 +552,10 @@ fun ChannelFilterChip(
     FilterChip(
         selected = selected,
         onClick = onClick,
-        modifier = modifier.heightIn(min = 38.dp),
+        modifier = modifier.heightIn(min = 32.dp),
         shape = CircleShape,
         leadingIcon = {
-            ChannelAvatar(channel = channel, size = 23, avatarPath = avatarPath)
+            ChannelAvatar(channel = channel, size = 20, avatarPath = avatarPath)
         },
         label = {
             Text(
@@ -839,17 +841,21 @@ fun ChannelChipRow(
     modifier: Modifier = Modifier,
     channelAvatars: Map<String, String> = emptyMap(),
 ) {
-    LazyRow(
-        modifier = modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(horizontal = 16.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
+    // Chip Material3 punya area sentuh minimum 48dp walau bentuknya hanya 32dp,
+    // sehingga ada ruang kosong ~8dp di atas dan bawah chip. Ruang itu dimatikan
+    // supaya deretan chip lebih rapat ke header seperti di YouTube.
+    CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides Dp.Unspecified) {
+        LazyRow(
+            modifier = modifier.fillMaxWidth(),
+            contentPadding = PaddingValues(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
         item {
             FilterChip(
                 selected = selectedChannel == null,
                 onClick = { onSelect(null) },
-                modifier = Modifier.heightIn(min = 38.dp),
+                modifier = Modifier.heightIn(min = 32.dp),
                 shape = CircleShape,
                 label = { Text("Semua") },
                 colors = FilterChipDefaults.filterChipColors(
@@ -873,6 +879,7 @@ fun ChannelChipRow(
                 onClick = { onSelect(if (selectedChannel == channel) null else channel) },
                 avatarPath = channelAvatars[channel],
             )
+        }
         }
     }
 }

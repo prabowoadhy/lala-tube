@@ -171,12 +171,11 @@ fun HomeScreen(
                 modifier = Modifier.padding(horizontal = 20.dp, vertical = 6.dp),
             )
         }
-        Spacer(Modifier.height(2.dp))
         ChannelChipRow(
             channels = channels,
             selectedChannel = selectedChannel,
             onSelect = { selectedChannel = it },
-            modifier = Modifier.padding(bottom = 4.dp),
+            modifier = Modifier.padding(bottom = 2.dp),
             channelAvatars = channelAvatars,
         )
         key(selectedChannel) {
