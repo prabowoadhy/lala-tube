@@ -211,6 +211,7 @@ fun LalaTubeApp(viewModel: MainViewModel) {
                         video = activeVideo,
                         queue = activeQueue,
                         recommendations = state.videos,
+                        shuffleSeed = state.shuffleSeed,
                         fullscreen = playerFullscreen,
                         onFullscreenChange = { playerFullscreen = it },
                         onBack = {

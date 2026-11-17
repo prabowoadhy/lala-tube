@@ -27,7 +27,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -41,6 +43,10 @@ import com.lalatube.offline.ui.components.ContinueShelf
 import com.lalatube.offline.ui.components.EmptyState
 import com.lalatube.offline.ui.components.SectionHeading
 import com.lalatube.offline.ui.components.VideoGrid
+import com.lalatube.offline.util.shuffledForSession
+
+/** Jumlah kartu yang dimuat sekaligus di beranda sebelum menggulir menambah lagi. */
+private const val HomePageSize = 15
 
 @Composable
 fun HomeScreen(
@@ -73,12 +79,19 @@ fun HomeScreen(
         }
     }
 
-    val visibleVideos = if (selectedChannel == null) {
-        state.videos
-    } else {
-        state.videos.filter { it.channel == selectedChannel }
+    // Susunan kartu acak tetapi stabil selama sesi: berubah tiap aplikasi dibuka
+    // atau folder dipindai ulang, tidak melompat saat digulir atau saat status
+    // tontonan disimpan.
+    val orderedVideos = remember(state.videos, state.shuffleSeed) {
+        state.videos.shuffledForSession(state.shuffleSeed)
     }
-    val continueVideos = visibleVideos
+
+    val filteredVideos = if (selectedChannel == null) {
+        orderedVideos
+    } else {
+        orderedVideos.filter { it.channel == selectedChannel }
+    }
+    val continueVideos = filteredVideos
         .filter { it.canResume }
         .sortedByDescending { it.lastPlayedAt }
 
@@ -167,11 +180,20 @@ fun HomeScreen(
             channelAvatars = channelAvatars,
         )
         key(selectedChannel) {
+            // Tampilkan bertahap: mulai [HomePageSize] kartu, tambah satu batch
+            // lagi tiap kali gulir sampai bawah supaya daftar panjang tetap ringan.
+            var visibleCount by remember { mutableIntStateOf(HomePageSize) }
+            val pagedVideos = filteredVideos.take(visibleCount)
             VideoGrid(
-                videos = visibleVideos,
-                onPlay = { onPlay(it, visibleVideos) },
+                videos = pagedVideos,
+                onPlay = { onPlay(it, filteredVideos) },
                 onToggleFavorite = onToggleFavorite,
                 modifier = Modifier.weight(1f),
+                hasMore = visibleCount < filteredVideos.size,
+                onLoadMore = {
+                    visibleCount = (visibleCount + HomePageSize)
+                        .coerceAtMost(filteredVideos.size)
+                },
                 header = {
                     Column(modifier = Modifier.fillMaxWidth()) {
                         if (continueVideos.isNotEmpty()) {
@@ -188,8 +210,8 @@ fun HomeScreen(
                             Spacer(Modifier.height(18.dp))
                         }
                         SectionHeading(
-                            title = if (selectedChannel == null) "Video terbaru" else selectedChannel!!,
-                            subtitle = "${visibleVideos.size} video • ${channels.size} kanal • offline",
+                            title = if (selectedChannel == null) "Video untukmu" else selectedChannel!!,
+                            subtitle = "${filteredVideos.size} video • ${channels.size} kanal • offline",
                         )
                         Spacer(Modifier.height(4.dp))
                     }

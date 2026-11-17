@@ -47,6 +47,7 @@ import androidx.compose.material.icons.rounded.VideoLibrary
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material.icons.rounded.WifiOff
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
@@ -57,6 +58,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -730,6 +733,10 @@ fun VideoGrid(
     modifier: Modifier = Modifier,
     header: (@Composable () -> Unit)? = null,
     emptyContent: (@Composable () -> Unit)? = null,
+    /** true kalau masih ada video yang belum ditampilkan (untuk pemuatan bertahap). */
+    hasMore: Boolean = false,
+    /** Dipanggil saat pengguna menggulir sampai bawah supaya batch berikutnya dimuat. */
+    onLoadMore: (() -> Unit)? = null,
 ) {
     if (videos.isEmpty() && emptyContent != null) {
         Box(modifier = modifier.fillMaxSize()) {
@@ -739,6 +746,22 @@ fun VideoGrid(
     }
 
     val gridState = rememberLazyGridState()
+
+    // Muat batch berikutnya begitu kartu terakhir mendekati bawah layar. Efek
+    // memakai videos.size sebagai kunci, jadi batch baru ikut dimuat otomatis
+    // kalau layar masih belum penuh.
+    if (onLoadMore != null) {
+        val nearEnd by remember(gridState) {
+            derivedStateOf {
+                val info = gridState.layoutInfo
+                val lastVisible = info.visibleItemsInfo.lastOrNull()?.index ?: 0
+                info.totalItemsCount > 0 && lastVisible >= info.totalItemsCount - 3
+            }
+        }
+        LaunchedEffect(nearEnd, videos.size) {
+            if (nearEnd) onLoadMore()
+        }
+    }
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
         // 2K (1000dp) = 3 kolom seperti YouTube, layar sangat lebar dapat 4 kolom.
@@ -764,7 +787,21 @@ fun VideoGrid(
                 )
             }
             item(span = { GridItemSpan(maxLineSpan) }) {
-                Spacer(Modifier.height(18.dp))
+                if (hasMore) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(22.dp),
+                            strokeWidth = 2.dp,
+                        )
+                    }
+                } else {
+                    Spacer(Modifier.height(18.dp))
+                }
             }
         }
     }

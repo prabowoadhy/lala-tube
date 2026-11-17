@@ -81,6 +81,7 @@ import com.lalatube.offline.data.Video
 import com.lalatube.offline.ui.components.ChannelAvatar
 import com.lalatube.offline.ui.theme.YouTubeRed
 import com.lalatube.offline.util.formatDuration
+import com.lalatube.offline.util.videoShuffleKey
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 
@@ -90,6 +91,7 @@ fun PlayerScreen(
     video: Video,
     queue: List<Video>,
     recommendations: List<Video>,
+    shuffleSeed: Long,
     fullscreen: Boolean,
     onFullscreenChange: (Boolean) -> Unit,
     onBack: () -> Unit,
@@ -102,13 +104,21 @@ fun PlayerScreen(
     val view = LocalView.current
     val currentIndex = queue.indexOfFirst { it.uri == video.uri }
     val nextVideo = if (currentIndex >= 0) queue.getOrNull(currentIndex + 1) else null
-    val suggestions = remember(recommendations, video.uri) {
+    // Seed per-video: kombinasi seed sesi + URI video yang diputar.
+    // Setiap ganti video = urutan rekomendasi berbeda, tapi deterministik.
+    val videoShuffleSeed = remember(video.uri, shuffleSeed) {
+        videoShuffleKey(shuffleSeed, video.uri)
+    }
+    val suggestions = remember(recommendations, video.uri, videoShuffleSeed) {
+        val seed = videoShuffleSeed
         recommendations
             .asSequence()
             .filter { it.uri != video.uri }
+            // Video dari kanal yang sama didahulukan seperti YouTube, tetapi
+            // urutannya diacak per video supaya tidak selalu sama.
             .sortedWith(
-                compareByDescending<Video> { it.channel == video.channel }
-                    .thenByDescending { it.lastModified },
+                compareBy<Video> { if (it.channel == video.channel) 0 else 1 }
+                    .thenBy { videoShuffleKey(seed, it.uri) },
             )
             .toList()
     }

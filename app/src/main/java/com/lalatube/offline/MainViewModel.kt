@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.random.Random
 
 data class UiState(
     val initialized: Boolean = false,
@@ -34,6 +35,11 @@ data class UiState(
     val message: String? = null,
     val lastScanAt: Long = 0L,
     val storagePermissionGranted: Boolean = false,
+    /**
+     * Seed urutan acak daftar video. Diganti setiap aplikasi dibuka atau folder
+     * dipindai ulang, jadi anak selalu melihat susunan video yang berbeda.
+     */
+    val shuffleSeed: Long = 0L,
 )
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -69,6 +75,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     storagePermissionGranted = StorageAccess.canAccessStorage(
                         getApplication(),
                     ),
+                    shuffleSeed = newShuffleSeed(),
                 )
             }
             if (hasAccess) scan(showToastOnError = false)
@@ -167,6 +174,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     scanDone = 0,
                     scanTotal = 0,
                     message = null,
+                    // Pindai ulang = urutan baru, supaya tidak membosankan.
+                    shuffleSeed = newShuffleSeed(),
                 )
             }
             try {
@@ -312,6 +321,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun crashLogFile(): File = File(getApplication<Application>().filesDir, "last-crash.txt")
+
+    /** Seed acak baru untuk mengubah susunan video di beranda dan rekomendasi. */
+    private fun newShuffleSeed(): Long = Random.nextLong()
 
     private fun readCrashReport(): String? = runCatching {
         val file = crashLogFile()

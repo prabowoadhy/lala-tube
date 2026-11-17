@@ -121,10 +121,19 @@ Di halaman tonton:
   dalam satu baris seperti YouTube. Bila ruangnya kurang, teks otomatis turun
   ke baris berikutnya. Kartu **Lanjutkan menonton** memakai susunan yang sama:
   avatar kanal di kiri, lalu judul dan subjudul.
+- Urutan video di beranda **diacak setiap aplikasi dibuka** atau tombol
+  **Pindai ulang** ditekan, jadi anak tidak bosan dengan susunan yang sama
+  terus-menerus. Rekomendasi di halaman tonton juga diacak dengan aturan yang
+  sama. Favorit, riwayat, dan **Lanjutkan menonton** tidak ikut diacak.
+- Kartu di beranda dimuat **bertahap 15 per batch**. Gulir sampai bawah untuk
+  memuat batch berikutnya, sehingga koleksi 100+ video tetap ringan.
 - Header atas selalu tampil dengan logo dan judul selebar aplikasi YouTube.
 - Menu **Beranda / Favorit / Riwayat / Pengaturan** berada di tengah bawah
   layar, sama seperti aplikasi YouTube Android. Di halaman tonton menu ini
   disembunyikan agar pemutar penuh dari sudut kiri atas.
+- **Status bar dan tombol navigasi Android** (Back/Home/Recent atau gesture
+  pill) tetap terlihat seperti YouTube di head unit. Konten diberi jarak aman
+  supaya tidak tertutup tombol navigasi.
 
 ### Tombol D-pad / remot
 

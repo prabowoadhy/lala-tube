@@ -22,6 +22,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -44,6 +46,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -84,6 +87,12 @@ fun WatchLayout(
         val videoWidth = minOf(contentWidth, maxVideoHeight * 16f / 9f)
         val videoHeight = videoWidth * 9f / 16f
 
+        // Navigation bar bottom inset untuk menghindari konten tertutup tombol navigasi.
+        val density = LocalDensity.current
+        val navBarBottom = with(density) {
+            WindowInsets.navigationBars.getBottom(this).toDp()
+        }
+
         Row(modifier = Modifier.fillMaxSize()) {
             Column(
                 modifier = Modifier
@@ -103,7 +112,8 @@ fun WatchLayout(
                         .weight(1f)
                         .fillMaxWidth()
                         .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                        .padding(start = 16.dp, end = 16.dp)
+                        .padding(top = 12.dp, bottom = 12.dp + navBarBottom),
                 ) {
 
                     Spacer(Modifier.height(12.dp))
@@ -236,6 +246,10 @@ private fun RecommendationSidebar(
     onPlay: (Video) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val density = LocalDensity.current
+    val navBarBottom = with(density) {
+        WindowInsets.navigationBars.getBottom(this).toDp()
+    }
     Column(
         modifier = modifier.background(MaterialTheme.colorScheme.surface),
     ) {
@@ -250,7 +264,12 @@ private fun RecommendationSidebar(
             )
         } else {
             LazyColumn(
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp),
+                contentPadding = PaddingValues(
+                    start = 12.dp,
+                    end = 12.dp,
+                    top = 10.dp,
+                    bottom = 10.dp + navBarBottom,
+                ),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 items(videos, key = { it.uri }) { item ->
