@@ -2,6 +2,9 @@ package com.lalatube.offline.ui.screens
 
 import android.graphics.Color as AndroidColor
 import androidx.activity.compose.BackHandler
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -176,6 +179,22 @@ fun PlayerScreen(
         val previous = view.keepScreenOn
         view.keepScreenOn = true
         onDispose { view.keepScreenOn = previous }
+    }
+
+    // Mode layar penuh: sembunyikan status bar + navigation bar seperti YouTube,
+    // lalu tampilkan lagi saat keluar. Di halaman tonton biasa kedua bar tetap
+    // terlihat dan konten diberi jarak aman supaya tidak tertutup.
+    LaunchedEffect(fullscreen) {
+        val window = (context as? android.app.Activity)?.window ?: return@LaunchedEffect
+        val controller = WindowCompat.getInsetsController(window, view)
+        if (fullscreen) {
+            controller.hide(WindowInsetsCompat.Type.systemBars())
+            controller.systemBarsBehavior =
+                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        } else {
+            controller.show(WindowInsetsCompat.Type.systemBars())
+            controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
+        }
     }
 
     DisposableEffect(player) {

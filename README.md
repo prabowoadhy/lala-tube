@@ -132,8 +132,13 @@ Di halaman tonton:
   layar, sama seperti aplikasi YouTube Android. Di halaman tonton menu ini
   disembunyikan agar pemutar penuh dari sudut kiri atas.
 - **Status bar dan tombol navigasi Android** (Back/Home/Recent atau gesture
-  pill) tetap terlihat seperti YouTube di head unit. Konten diberi jarak aman
-  supaya tidak tertutup tombol navigasi.
+  pill) tetap terlihat seperti YouTube di head unit. Konten halaman beranda,
+  favorit, riwayat, dan pengaturan diberi jarak aman supaya tidak tertutup
+  tombol navigasi.
+- **Pemutar video di halaman tonton dimulai tepat di bawah status bar**
+  (bukan menempel di y=0), jadi tombol menu status bar tidak menumpuk di atas
+  video. Mode **Layar penuh** menyembunyikan status bar + navigation bar
+  seperti YouTube, lalu memunculkannya kembali saat keluar.
 
 ### Tombol D-pad / remot
 

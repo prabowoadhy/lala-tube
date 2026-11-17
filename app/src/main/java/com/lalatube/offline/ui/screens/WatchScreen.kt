@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -74,10 +75,22 @@ fun WatchLayout(
     onFullscreen: () -> Unit,
     playerStage: @Composable (Modifier) -> Unit,
 ) {
+    // Status bar atas + navigation bar bawah harus tetap terlihat seperti YouTube.
+    // Pemutar & konten dimulai tepat di bawah status bar (y=96px di head unit),
+    // jadi tombol menu status bar tidak menumpuk di atas video.
+    val density = LocalDensity.current
+    val statusBarTop = with(density) {
+        WindowInsets.statusBars.getTop(this).toDp()
+    }
+    val navBarBottom = with(density) {
+        WindowInsets.navigationBars.getBottom(this).toDp()
+    }
+
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background),
+            .background(MaterialTheme.colorScheme.background)
+            .padding(top = statusBarTop),
     ) {
         val sidebarWidth = if (maxWidth >= 1000.dp) 360.dp else 300.dp
         // Lebar video mengikuti kolom kiri agar menempel ke tepi layar, tetapi
@@ -86,12 +99,6 @@ fun WatchLayout(
         val maxVideoHeight = (maxHeight - 128.dp).coerceAtLeast(90.dp)
         val videoWidth = minOf(contentWidth, maxVideoHeight * 16f / 9f)
         val videoHeight = videoWidth * 9f / 16f
-
-        // Navigation bar bottom inset untuk menghindari konten tertutup tombol navigasi.
-        val density = LocalDensity.current
-        val navBarBottom = with(density) {
-            WindowInsets.navigationBars.getBottom(this).toDp()
-        }
 
         Row(modifier = Modifier.fillMaxSize()) {
             Column(
