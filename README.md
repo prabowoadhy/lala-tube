@@ -157,8 +157,10 @@ mengikuti susunan kanal YouTube:
 - Menu **Beranda / Favorit / Riwayat / Pengaturan** berada di tengah bawah
   layar, sama seperti aplikasi YouTube Android. Ikonnya **garis (tanpa isi)** saat
   tidak dipilih dan **terisi penuh hitam** saat menu itu aktif, memakai huruf
-  Roboto Medium 12sp dan tinggi bar 48dp yang rapat ke ikon + teks. Di halaman
-  tonton menu ini disembunyikan agar pemutar penuh dari sudut kiri atas.
+  Roboto Medium 12sp. Jarak dari garis atas ke ikon tetap lega seperti YouTube,
+  sedangkan jarak dari teks ke tepi bawah dirapatkan, sehingga bar cukup
+  **38dp** (YouTube 48dp) dan terasa lebih ringkas. Di halaman tonton menu ini
+  disembunyikan agar pemutar penuh dari sudut kiri atas.
 - **Status bar dan tombol navigasi Android** (Back/Home/Recent atau gesture
   pill) tetap terlihat seperti YouTube di head unit. Konten halaman beranda,
   favorit, riwayat, dan pengaturan diberi jarak aman supaya tidak tertutup

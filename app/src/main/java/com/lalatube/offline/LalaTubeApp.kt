@@ -490,9 +490,9 @@ private fun AppBottomBar(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    // Bar bawah dibuat lebih rapat: hanya setinggi ikon + label
-                    // (48dp), seperti bottom bar YouTube Android.
-                    .height(48.dp),
+                    // Bar bawah dirapatkan: ikon + label dirapatkan, tetapi jarak
+                    // dari garis atas ke ikon tetap lega seperti YouTube.
+                    .height(38.dp),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -519,9 +519,10 @@ private fun AppBottomBar(
                                 indication = null,
                                 onClick = { onSelect(destination.tab) },
                             )
-                            // Geser isi sedikit ke atas seperti YouTube: jarak
-                            // ikon ke garis atas lebih rapat daripada ke bawah.
-                            .padding(bottom = 2.dp),
+                            // Jarak atas (garis ke ikon) dibiarkan lega seperti
+                            // YouTube; jarak bawah (teks ke tepi bar) yang
+                            // dirapatkan supaya bar tetap pendek.
+                            .padding(top = 1.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                     ) {
@@ -539,15 +540,16 @@ private fun AppBottomBar(
                             } else {
                                 MaterialTheme.colorScheme.onSurfaceVariant
                             },
-                            modifier = Modifier.size(27.dp),
+                            modifier = Modifier.size(23.dp),
                         )
-                        Spacer(Modifier.height(1.dp))
                         Text(
                             text = destination.label,
                             // Font menu bawah sama dengan aplikasi YouTube:
-                            // Roboto Medium 12sp (tinggi baris 16sp). Saat aktif
-                            // hanya warnanya yang berubah, teks tidak ditebalkan.
-                            style = MaterialTheme.typography.labelMedium,
+                            // Roboto Medium 12sp, tetapi tinggi barisnya
+                            // dipadatkan ke 14sp agar bar bisa lebih pendek.
+                            style = MaterialTheme.typography.labelMedium.copy(
+                                lineHeight = 14.sp,
+                            ),
                             color = if (active) {
                                 MaterialTheme.colorScheme.onSurface
                             } else {
