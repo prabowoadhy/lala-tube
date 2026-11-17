@@ -9,6 +9,7 @@ import com.lalatube.offline.data.LibraryRepository
 import com.lalatube.offline.data.StorageAccess
 import com.lalatube.offline.data.ThemeMode
 import com.lalatube.offline.data.Video
+import com.lalatube.offline.data.prunedHistory
 import java.io.File
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -50,7 +51,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         viewModelScope.launch {
-            val saved = repository.loadSavedVideos().sortedByNewest()
+            val loaded = repository.loadSavedVideos()
+            // Riwayat dari versi lama bisa melebihi batas; rapikan sekali di sini.
+            val saved = loaded.prunedHistory().sortedByNewest()
+            if (saved != loaded) repository.saveVideos(saved)
             val tree = repository.treeUri
             val hasFolder = repository.hasFolder()
             val hasAccess = when {
@@ -267,7 +271,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 completed = completed,
                 lastPlayedAt = now,
             )
-        }
+        }.prunedHistory()
         _uiState.update { it.copy(videos = updated) }
         viewModelScope.launch { repository.saveVideos(updated) }
     }

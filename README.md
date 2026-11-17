@@ -144,6 +144,11 @@ mengikuti susunan kanal YouTube:
   sama. Favorit, riwayat, dan **Lanjutkan menonton** tidak ikut diacak.
 - Kartu di beranda dimuat **bertahap 15 per batch**. Gulir sampai bawah untuk
   memuat batch berikutnya, sehingga koleksi 100+ video tetap ringan.
+- Halaman **Riwayat** juga dimuat **bertahap 15 per batch** dengan cara yang sama,
+  jadi riwayat panjang tidak membuat aplikasi berat saat dibuka.
+- **Riwayat tontonan dibatasi 50 video terbaru** yang disimpan. Cap waktu riwayat
+  yang lebih lama dilepas otomatis (posisi tontonan dan tanda favorit tetap
+  tersimpan), sehingga daftar riwayat dan berkas penyimpanan tidak terus membesar.
 - Header atas selalu tampil dengan logo dan judul selebar aplikasi YouTube, dengan
   tinggi 48dp supaya deretan tombol kanal di bawahnya lebih rapat ke atas. Tombol
   kanal (chip) memakai sudut membulat 8dp, bukan pil penuh, sama seperti YouTube.

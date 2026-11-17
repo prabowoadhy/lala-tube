@@ -11,8 +11,14 @@ import androidx.compose.material.icons.rounded.History
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.lalatube.offline.data.HistoryLimit
+import com.lalatube.offline.data.HistoryPageSize
 import com.lalatube.offline.data.Video
 import com.lalatube.offline.ui.components.EmptyState
 import com.lalatube.offline.ui.components.SectionHeading
@@ -89,17 +95,29 @@ fun HistoryScreen(
         )
         return
     }
+
+    // Tampilkan bertahap: mulai [HistoryPageSize] kartu, lalu tambah satu batch
+    // lagi setiap kali gulir sampai bawah. Riwayat panjang jadi tetap ringan
+    // karena kartu (termasuk thumbnail) hanya dibuat saat benar-benar terlihat.
+    var visibleCount by remember { mutableIntStateOf(HistoryPageSize) }
+    val pagedHistory = history.take(visibleCount)
+
     VideoGrid(
-        videos = history,
+        videos = pagedHistory,
         onPlay = { onPlay(it, history) },
         onToggleFavorite = onToggleFavorite,
         modifier = modifier.fillMaxSize(),
+        hasMore = visibleCount < history.size,
+        onLoadMore = {
+            visibleCount = (visibleCount + HistoryPageSize).coerceAtMost(history.size)
+        },
         header = {
             Column {
                 Spacer(Modifier.height(8.dp))
                 SectionHeading(
                     title = "Riwayat tontonan",
-                    subtitle = "${history.size} video pernah diputar",
+                    subtitle = "${history.size} video pernah diputar • " +
+                        "maksimal $HistoryLimit riwayat disimpan",
                 )
                 Spacer(Modifier.height(10.dp))
             }
