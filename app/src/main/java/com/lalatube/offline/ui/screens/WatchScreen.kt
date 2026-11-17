@@ -289,14 +289,13 @@ private fun RecommendationCard(
                 interactionSource = interactionSource,
                 indication = LocalIndication.current,
                 onClick = onClick,
-            )
-            .padding(6.dp),
+            ),
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(16f / 9f)
-                .clip(RoundedCornerShape(10.dp)),
+                .clip(RoundedCornerShape(12.dp)),
         ) {
             VideoThumbnail(
                 path = video.thumbnailPath,

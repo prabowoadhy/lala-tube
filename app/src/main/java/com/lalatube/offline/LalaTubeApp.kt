@@ -4,8 +4,8 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -17,7 +17,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.History
@@ -31,10 +34,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationRail
-import androidx.compose.material3.NavigationRailItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -50,9 +49,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.Lifecycle
@@ -228,21 +232,18 @@ fun LalaTubeApp(viewModel: MainViewModel) {
                     }
                 }
 
-                BoxWithConstraints(
+                Box(
                     modifier = Modifier
                         .fillMaxSize()
                         .windowInsetsPadding(WindowInsets.safeDrawing),
                 ) {
-                    val wide = maxWidth >= 840.dp
                     Scaffold(
                         containerColor = MaterialTheme.colorScheme.background,
                         contentWindowInsets = WindowInsets(0, 0, 0, 0),
                         snackbarHost = {
                             SnackbarHost(
                                 hostState = snackbarHostState,
-                                modifier = Modifier.padding(
-                                    bottom = if (wide) 16.dp else 86.dp,
-                                ),
+                                modifier = Modifier.padding(bottom = 66.dp),
                             )
                         },
                     ) { _ ->
@@ -282,75 +283,55 @@ fun LalaTubeApp(viewModel: MainViewModel) {
                                                     .height(2.dp),
                                             )
                                         }
-                                    } else {
-                                        HorizontalDivider(
-                                            color = MaterialTheme.colorScheme.outlineVariant,
+                                    }
+                                }
+
+                                Box(modifier = Modifier.weight(1f)) {
+                                    when (tab) {
+                                        Tabs.FAVORITES -> FavoritesScreen(
+                                            videos = state.videos,
+                                            onPlay = openPlayer,
+                                            onToggleFavorite = { viewModel.toggleFavorite(it.uri) },
+                                            onPickFolder = pickFolder,
+                                            modifier = Modifier.fillMaxSize(),
+                                        )
+
+                                        Tabs.HISTORY -> HistoryScreen(
+                                            videos = state.videos,
+                                            onPlay = openPlayer,
+                                            onToggleFavorite = { viewModel.toggleFavorite(it.uri) },
+                                            modifier = Modifier.fillMaxSize(),
+                                        )
+
+                                        Tabs.SETTINGS -> SettingsScreen(
+                                            state = state,
+                                            onPickFolder = pickFolder,
+                                            onRescan = viewModel::rescan,
+                                            onAutoDetect = viewModel::autoDetect,
+                                            onForgetFolder = viewModel::forgetFolder,
+                                            onThemeChange = { mode: ThemeMode ->
+                                                viewModel.setThemeMode(mode)
+                                            },
+                                            onSafeModeChange = viewModel::setSafeMode,
+                                            onClearCrashReport = viewModel::clearCrashReport,
+                                            modifier = Modifier.fillMaxSize(),
+                                        )
+
+                                        else -> HomeScreen(
+                                            state = state,
+                                            onPlay = openPlayer,
+                                            onToggleFavorite = { viewModel.toggleFavorite(it.uri) },
+                                            onPickFolder = pickFolder,
+                                            onRescan = viewModel::rescan,
+                                            modifier = Modifier.fillMaxSize(),
                                         )
                                     }
                                 }
 
-                                Row(modifier = Modifier.weight(1f)) {
-                                    if (wide) {
-                                        AppNavigationRail(
-                                            selected = tab,
-                                            onSelect = { tab = it },
-                                        )
-                                        HorizontalDivider(
-                                            modifier = Modifier
-                                                .width(1.dp)
-                                                .fillMaxHeight(),
-                                            color = MaterialTheme.colorScheme.outlineVariant,
-                                        )
-                                    }
-                                    Box(modifier = Modifier.weight(1f)) {
-                                        when (tab) {
-                                            Tabs.FAVORITES -> FavoritesScreen(
-                                                videos = state.videos,
-                                                onPlay = openPlayer,
-                                                onToggleFavorite = { viewModel.toggleFavorite(it.uri) },
-                                                onPickFolder = pickFolder,
-                                                modifier = Modifier.fillMaxSize(),
-                                            )
-
-                                            Tabs.HISTORY -> HistoryScreen(
-                                                videos = state.videos,
-                                                onPlay = openPlayer,
-                                                onToggleFavorite = { viewModel.toggleFavorite(it.uri) },
-                                                modifier = Modifier.fillMaxSize(),
-                                            )
-
-                                            Tabs.SETTINGS -> SettingsScreen(
-                                                state = state,
-                                                onPickFolder = pickFolder,
-                                                onRescan = viewModel::rescan,
-                                                onAutoDetect = viewModel::autoDetect,
-                                                onForgetFolder = viewModel::forgetFolder,
-                                                onThemeChange = { mode: ThemeMode ->
-                                                    viewModel.setThemeMode(mode)
-                                                },
-                                                onSafeModeChange = viewModel::setSafeMode,
-                                                onClearCrashReport = viewModel::clearCrashReport,
-                                                modifier = Modifier.fillMaxSize(),
-                                            )
-
-                                            else -> HomeScreen(
-                                                state = state,
-                                                onPlay = openPlayer,
-                                                onToggleFavorite = { viewModel.toggleFavorite(it.uri) },
-                                                onPickFolder = pickFolder,
-                                                onRescan = viewModel::rescan,
-                                                modifier = Modifier.fillMaxSize(),
-                                            )
-                                        }
-                                    }
-                                }
-
-                                if (!wide) {
-                                    AppBottomBar(
-                                        selected = tab,
-                                        onSelect = { tab = it },
-                                    )
-                                }
+                                AppBottomBar(
+                                    selected = tab,
+                                    onSelect = { tab = it },
+                                )
                             }
                         }
                     }
@@ -373,8 +354,8 @@ private fun AppTopBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(62.dp)
-                .padding(horizontal = 18.dp),
+                .height(64.dp)
+                .padding(start = 24.dp, end = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             LalaTubeLogo()
@@ -384,7 +365,7 @@ private fun AppTopBar(
                     imageVector = Icons.Rounded.Search,
                     contentDescription = "Cari",
                     tint = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(25.dp),
+                    modifier = Modifier.size(24.dp),
                 )
             }
             Spacer(Modifier.width(2.dp))
@@ -408,62 +389,83 @@ private fun AppTopBar(
     }
 }
 
-@Composable
-private fun AppNavigationRail(
-    selected: String,
-    onSelect: (String) -> Unit,
-) {
-    NavigationRail(
-        containerColor = MaterialTheme.colorScheme.surface,
-        modifier = Modifier.fillMaxHeight(),
-    ) {
-        Spacer(Modifier.height(8.dp))
-        destinations.forEach { destination ->
-            NavigationRailItem(
-                selected = selected == destination.tab,
-                onClick = { onSelect(destination.tab) },
-                icon = {
-                    Icon(
-                        imageVector = destination.icon,
-                        contentDescription = null,
-                    )
-                },
-                label = { Text(destination.label) },
-                alwaysShowLabel = true,
-            )
-        }
-        Spacer(Modifier.weight(1f))
-        Text(
-            text = "OFFLINE",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(bottom = 18.dp),
-        )
-    }
-}
-
+/**
+ * Navigasi bawah seperti aplikasi YouTube Android: deretan menu di tengah
+ * layar, ikon kecil dengan label tipis, dan garis pemisah tipis di atasnya.
+ */
 @Composable
 private fun AppBottomBar(
     selected: String,
     onSelect: (String) -> Unit,
 ) {
-    NavigationBar(
-        containerColor = MaterialTheme.colorScheme.surface,
-        tonalElevation = 0.dp,
-        modifier = Modifier.height(72.dp),
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        modifier = Modifier.fillMaxWidth(),
     ) {
-        destinations.forEach { destination ->
-            NavigationBarItem(
-                selected = selected == destination.tab,
-                onClick = { onSelect(destination.tab) },
-                icon = {
-                    Icon(
-                        imageVector = destination.icon,
-                        contentDescription = null,
-                    )
-                },
-                label = { Text(destination.label) },
+        Column {
+            HorizontalDivider(
+                thickness = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant,
             )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(54.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                destinations.forEach { destination ->
+                    val active = selected == destination.tab
+                    val interactionSource = remember { MutableInteractionSource() }
+                    val focused by interactionSource.collectIsFocusedAsState()
+                    Column(
+                        modifier = Modifier
+                            .width(96.dp)
+                            .fillMaxHeight()
+                            .padding(vertical = 4.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(
+                                if (focused) {
+                                    MaterialTheme.colorScheme.surfaceContainerHigh
+                                } else {
+                                    Color.Transparent
+                                },
+                            )
+                            .selectable(
+                                selected = active,
+                                role = Role.Tab,
+                                interactionSource = interactionSource,
+                                indication = null,
+                                onClick = { onSelect(destination.tab) },
+                            ),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        Icon(
+                            imageVector = destination.icon,
+                            contentDescription = null,
+                            tint = if (active) {
+                                MaterialTheme.colorScheme.onSurface
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                            modifier = Modifier.size(23.dp),
+                        )
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            text = destination.label,
+                            fontSize = 11.sp,
+                            lineHeight = 13.sp,
+                            fontWeight = if (active) FontWeight.SemiBold else FontWeight.Medium,
+                            color = if (active) {
+                                MaterialTheme.colorScheme.onSurface
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                        )
+                    }
+                }
+            }
         }
     }
 }

@@ -86,25 +86,29 @@ fun LalaTubeLogo(modifier: Modifier = Modifier) {
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // Proporsi kotak logo disamakan dengan logo YouTube di aplikasi Android:
+        // sekitar 29x20dp dengan sudut membulat dan segitiga kecil di tengah.
         Box(
             modifier = Modifier
-                .size(width = 38.dp, height = 27.dp)
-                .background(YouTubeRed, RoundedCornerShape(7.dp)),
+                .size(width = 29.dp, height = 20.dp)
+                .background(YouTubeRed, RoundedCornerShape(8.dp)),
             contentAlignment = Alignment.Center,
         ) {
             Icon(
                 imageVector = Icons.Rounded.PlayArrow,
                 contentDescription = null,
                 tint = Color.White,
-                modifier = Modifier.size(22.dp),
+                modifier = Modifier.size(15.dp),
             )
         }
-        Spacer(Modifier.width(8.dp))
+        Spacer(Modifier.width(3.dp))
         Text(
             text = "LalaTube",
             style = MaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.ExtraBold,
-                letterSpacing = (-0.9).sp,
+                fontSize = 23.sp,
+                lineHeight = 26.sp,
+                letterSpacing = (-1.2).sp,
             ),
             color = MaterialTheme.colorScheme.onSurface,
         )
@@ -292,14 +296,13 @@ fun VideoCard(
                 interactionSource = interactionSource,
                 indication = LocalIndication.current,
                 onClick = onClick,
-            )
-            .padding(6.dp),
+            ),
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(16f / 9f)
-                .clip(RoundedCornerShape(11.dp)),
+                .clip(RoundedCornerShape(12.dp)),
         ) {
             VideoThumbnail(
                 path = video.thumbnailPath,
@@ -350,27 +353,30 @@ fun VideoCard(
             }
         }
 
-        Spacer(Modifier.height(9.dp))
+        Spacer(Modifier.height(10.dp))
         Row(modifier = Modifier.fillMaxWidth()) {
             ChannelAvatar(channel = video.channel, size = 36, avatarPath = video.channelAvatarPath)
-            Spacer(Modifier.width(9.dp))
+            Spacer(Modifier.width(10.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = video.title,
                     style = MaterialTheme.typography.titleSmall.copy(
                         fontWeight = FontWeight.SemiBold,
-                        fontSize = 15.sp,
-                        lineHeight = 20.sp,
+                        fontSize = 16.sp,
+                        lineHeight = 21.sp,
                     ),
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     minLines = 2,
                 )
-                Spacer(Modifier.height(2.dp))
+                Spacer(Modifier.height(3.dp))
                 Text(
                     text = video.channel,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontSize = 13.sp,
+                        lineHeight = 18.sp,
+                    ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -386,7 +392,10 @@ fun VideoCard(
                             append(relativeDate(video.addedAt))
                         }
                     },
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontSize = 13.sp,
+                        lineHeight = 18.sp,
+                    ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -440,13 +449,14 @@ fun WideVideoCard(
     video: Video,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    width: Dp = 300.dp,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val focused by interactionSource.collectIsFocusedAsState()
     val shape = RoundedCornerShape(13.dp)
     Column(
         modifier = modifier
-            .width(300.dp)
+            .width(width)
             .clip(shape)
             .background(
                 if (focused) MaterialTheme.colorScheme.surfaceContainer else Color.Transparent,
@@ -459,14 +469,13 @@ fun WideVideoCard(
                 interactionSource = interactionSource,
                 indication = LocalIndication.current,
                 onClick = onClick,
-            )
-            .padding(6.dp),
+            ),
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(16f / 9f)
-                .clip(RoundedCornerShape(10.dp)),
+                .clip(RoundedCornerShape(12.dp)),
         ) {
             VideoThumbnail(
                 path = video.thumbnailPath,
@@ -717,14 +726,14 @@ fun VideoGrid(
     val gridState = rememberLazyGridState()
 
     BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-        // 2K (sekitar 1280dp) = 4 kolom, layar lebih lebar dapat 5 kolom.
+        // 2K (1000dp) = 3 kolom seperti YouTube, layar sangat lebar dapat 4 kolom.
         val columns = videoGridColumns(maxWidth)
         LazyVerticalGrid(
             columns = GridCells.Fixed(columns),
             state = gridState,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             if (header != null) {
@@ -780,7 +789,7 @@ fun ChannelChipRow(
 ) {
     LazyRow(
         modifier = modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(horizontal = 20.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

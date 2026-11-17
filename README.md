@@ -113,11 +113,14 @@ Di halaman tonton:
 
 ### Tampilan mengikuti ukuran layar
 
-- Di layar 2K (sekitar 1280dp, seperti YouTube di tablet) grid menampilkan
-  **3 kolom** video. Layar sangat lebar (≥1800dp) memakai 4 kolom, layar kecil
+- Di layar 2K head unit (2000x1200, sekitar 1000dp seperti YouTube di tablet)
+  grid menampilkan **3 kolom** video dengan ukuran kartu dan jarak yang sama
+  dengan YouTube. Layar sangat lebar (≥1800dp) memakai 4 kolom, layar kecil
   2 kolom.
-- Header atas otomatis tersembunyi saat daftar digulir ke bawah dan muncul lagi
-  saat digulir ke atas, sama seperti aplikasi YouTube.
+- Header atas selalu tampil dengan logo dan judul selebar aplikasi YouTube.
+- Menu **Beranda / Favorit / Riwayat / Pengaturan** berada di tengah bawah
+  layar, sama seperti aplikasi YouTube Android. Di halaman tonton menu ini
+  disembunyikan agar pemutar penuh dari sudut kiri atas.
 
 ### Tombol D-pad / remot
 
