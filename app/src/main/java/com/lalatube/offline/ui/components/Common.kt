@@ -540,6 +540,9 @@ fun WideVideoCard(
     }
 }
 
+/** Bentuk chip kanal di beranda: sudut membulat 8dp seperti chip YouTube. */
+private val ChipShape = RoundedCornerShape(8.dp)
+
 @Composable
 fun ChannelFilterChip(
     channel: String,
@@ -553,7 +556,8 @@ fun ChannelFilterChip(
         selected = selected,
         onClick = onClick,
         modifier = modifier.heightIn(min = 32.dp),
-        shape = CircleShape,
+        // YouTube memakai sudut membulat ±8dp (bukan pil penuh) untuk chip.
+        shape = ChipShape,
         leadingIcon = {
             ChannelAvatar(channel = channel, size = 20, avatarPath = avatarPath)
         },
@@ -856,7 +860,7 @@ fun ChannelChipRow(
                 selected = selectedChannel == null,
                 onClick = { onSelect(null) },
                 modifier = Modifier.heightIn(min = 32.dp),
-                shape = CircleShape,
+                shape = ChipShape,
                 label = { Text("Semua") },
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = MaterialTheme.colorScheme.onSurface,

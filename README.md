@@ -145,7 +145,8 @@ mengikuti susunan kanal YouTube:
 - Kartu di beranda dimuat **bertahap 15 per batch**. Gulir sampai bawah untuk
   memuat batch berikutnya, sehingga koleksi 100+ video tetap ringan.
 - Header atas selalu tampil dengan logo dan judul selebar aplikasi YouTube, dengan
-  tinggi 48dp supaya deretan tombol kanal di bawahnya lebih rapat ke atas.
+  tinggi 48dp supaya deretan tombol kanal di bawahnya lebih rapat ke atas. Tombol
+  kanal (chip) memakai sudut membulat 8dp, bukan pil penuh, sama seperti YouTube.
 - Menu **Beranda / Favorit / Riwayat / Pengaturan** berada di tengah bawah
   layar, sama seperti aplikasi YouTube Android. Di halaman tonton menu ini
   disembunyikan agar pemutar penuh dari sudut kiri atas.
