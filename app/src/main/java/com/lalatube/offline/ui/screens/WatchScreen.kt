@@ -101,11 +101,11 @@ fun WatchLayout(
                 .background(MaterialTheme.colorScheme.background),
         ) {
         val sidebarWidth = if (maxWidth >= 1000.dp) 360.dp else 300.dp
-        // Lebar video mengikuti kolom kiri agar menempel ke tepi layar, tetapi
-        // tingginya dibatasi sekitar 58% tinggi layar seperti YouTube, supaya
-        // judul, kanal, dan tombol Favorit/Layar penuh terlihat tanpa menggulir.
+        // Video mengisi seluruh lebar kolom kiri (16:9) supaya tidak ada bilah
+        // hitam di kiri/kanan seperti YouTube. Sisa tinggi dipakai judul, kanal,
+        // dan tombol Favorit/Layar penuh; info tambahan bisa digulir.
         val contentWidth = (maxWidth - sidebarWidth - 1.dp).coerceAtLeast(160.dp)
-        val videoHeight = minOf(contentWidth * 9f / 16f, maxHeight * 0.58f)
+        val videoHeight = contentWidth * 9f / 16f
 
         Row(modifier = Modifier.fillMaxSize()) {
             Column(
@@ -131,7 +131,6 @@ fun WatchLayout(
                         .padding(top = 12.dp, bottom = 12.dp + navBarBottom),
                 ) {
 
-                    Spacer(Modifier.height(12.dp))
                     Text(
                         text = video.title,
                         style = MaterialTheme.typography.titleLarge.copy(

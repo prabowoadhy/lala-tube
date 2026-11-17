@@ -155,7 +155,8 @@ mengikuti susunan kanal YouTube:
   tombol navigasi.
 - **Pemutar video di halaman tonton dimulai tepat di bawah status bar**
   (bukan menempel di y=0), jadi tombol menu status bar tidak menumpuk di atas
-  video. Mode **Layar penuh** menyembunyikan status bar + navigation bar
+  video. Video memakai **seluruh lebar kolom kiri** (16:9) sehingga tidak ada
+  bilah hitam di kiri dan kanan seperti YouTube. Mode **Layar penuh** menyembunyikan status bar + navigation bar
   seperti YouTube, lalu memunculkannya kembali saat keluar.
 
 ### Tombol D-pad / remot
