@@ -12,8 +12,8 @@ android {
         applicationId = "com.lalatube.offline"
         minSdk = 24
         targetSdk = 36
-        versionCode = 18
-        versionName = "1.0.17"
+        versionCode = 17
+        versionName = "1.0.16"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true

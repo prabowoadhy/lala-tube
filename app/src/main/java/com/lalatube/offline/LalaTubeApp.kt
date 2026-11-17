@@ -22,10 +22,6 @@ import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.outlined.History
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Home
@@ -91,37 +87,14 @@ private object Tabs {
 private data class NavDestination(
     val tab: String,
     val label: String,
-    /** Ikon saat menu tidak dipilih: tanpa isi (outline). */
     val icon: ImageVector,
-    /** Ikon saat menu aktif: terisi penuh seperti YouTube. */
-    val activeIcon: ImageVector,
 )
 
 private val destinations = listOf(
-    NavDestination(
-        Tabs.HOME,
-        "Beranda",
-        Icons.Outlined.Home,
-        Icons.Rounded.Home,
-    ),
-    NavDestination(
-        Tabs.FAVORITES,
-        "Favorit",
-        Icons.Outlined.FavoriteBorder,
-        Icons.Rounded.Favorite,
-    ),
-    NavDestination(
-        Tabs.HISTORY,
-        "Riwayat",
-        Icons.Outlined.History,
-        Icons.Rounded.History,
-    ),
-    NavDestination(
-        Tabs.SETTINGS,
-        "Pengaturan",
-        Icons.Outlined.Settings,
-        Icons.Rounded.Settings,
-    ),
+    NavDestination(Tabs.HOME, "Beranda", Icons.Rounded.Home),
+    NavDestination(Tabs.FAVORITES, "Favorit", Icons.Rounded.Favorite),
+    NavDestination(Tabs.HISTORY, "Riwayat", Icons.Rounded.History),
+    NavDestination(Tabs.SETTINGS, "Pengaturan", Icons.Rounded.Settings),
 )
 
 @Composable
@@ -490,9 +463,7 @@ private fun AppBottomBar(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    // Bar bawah dirapatkan: ikon + label dirapatkan, tetapi jarak
-                    // dari garis atas ke ikon tetap lega seperti YouTube.
-                    .height(38.dp),
+                    .height(54.dp),
                 horizontalArrangement = Arrangement.Center,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -502,8 +473,9 @@ private fun AppBottomBar(
                     val focused by interactionSource.collectIsFocusedAsState()
                     Column(
                         modifier = Modifier
-                            .width(104.dp)
+                            .width(96.dp)
                             .fillMaxHeight()
+                            .padding(vertical = 4.dp)
                             .clip(RoundedCornerShape(12.dp))
                             .background(
                                 if (focused) {
@@ -518,22 +490,12 @@ private fun AppBottomBar(
                                 interactionSource = interactionSource,
                                 indication = null,
                                 onClick = { onSelect(destination.tab) },
-                            )
-                            // Jarak atas (garis ke ikon) dibiarkan lega seperti
-                            // YouTube; jarak bawah (teks ke tepi bar) yang
-                            // dirapatkan supaya bar tetap pendek.
-                            .padding(top = 1.dp),
+                            ),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                     ) {
                         Icon(
-                            // Tidak dipilih = ikon garis (nofill); dipilih = ikon
-                            // terisi penuh dengan warna hitam seperti YouTube.
-                            imageVector = if (active) {
-                                destination.activeIcon
-                            } else {
-                                destination.icon
-                            },
+                            imageVector = destination.icon,
                             contentDescription = null,
                             tint = if (active) {
                                 MaterialTheme.colorScheme.onSurface
@@ -542,14 +504,12 @@ private fun AppBottomBar(
                             },
                             modifier = Modifier.size(23.dp),
                         )
+                        Spacer(Modifier.height(2.dp))
                         Text(
                             text = destination.label,
-                            // Font menu bawah sama dengan aplikasi YouTube:
-                            // Roboto Medium 12sp, tetapi tinggi barisnya
-                            // dipadatkan ke 14sp agar bar bisa lebih pendek.
-                            style = MaterialTheme.typography.labelMedium.copy(
-                                lineHeight = 14.sp,
-                            ),
+                            fontSize = 11.sp,
+                            lineHeight = 13.sp,
+                            fontWeight = if (active) FontWeight.SemiBold else FontWeight.Medium,
                             color = if (active) {
                                 MaterialTheme.colorScheme.onSurface
                             } else {
