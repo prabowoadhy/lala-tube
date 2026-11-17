@@ -332,18 +332,14 @@ private fun RecommendationCard(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Spacer(Modifier.height(3.dp))
+                // Subjudul satu baris ala YouTube: kanal, durasi, lalu status unduhan.
+                // Bila tidak muat, teks turun ke baris berikutnya.
                 Text(
-                    text = video.channel,
-                    style = MaterialTheme.typography.bodySmall,
+                    text = "${video.channel} • ${formatDuration(video.durationMs)} • offline",
+                    style = MaterialTheme.typography.bodySmall.copy(lineHeight = 16.sp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = "${formatDuration(video.durationMs)} • offline",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
                 )
             }
         }
