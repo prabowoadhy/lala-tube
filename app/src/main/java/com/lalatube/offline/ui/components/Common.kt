@@ -269,6 +269,71 @@ fun WatchProgressBar(
     }
 }
 
+/**
+ * Subjudul kartu video ala YouTube: nama kanal, status unduhan, dan sisa menit
+ * digabung dalam satu baris. Bila ruang tidak cukup, teks otomatis turun ke
+ * baris berikutnya (bukan dipotong dengan elipsis di baris pertama).
+ */
+private fun videoSubtitle(video: Video): String = buildString {
+    append(video.channel)
+    append(" • ")
+    append(if (video.completed) "Sudah ditonton" else "Offline")
+    if (video.canResume) {
+        append(" • ")
+        append(progressDescription(video.positionMs, video.durationMs))
+    } else if (video.addedAt > 0L) {
+        append(" • ")
+        append(relativeDate(video.addedAt))
+    }
+}
+
+/**
+ * Isi kartu video (avatar kanal + judul + subjudul) yang dipakai bersama oleh
+ * kartu beranda dan kartu "Lanjutkan menonton" agar proporsinya identik.
+ */
+@Composable
+private fun VideoCardBody(
+    channel: String,
+    avatarPath: String?,
+    title: String,
+    subtitle: String,
+    modifier: Modifier = Modifier,
+    trailing: (@Composable () -> Unit)? = null,
+) {
+    Row(modifier = modifier.fillMaxWidth()) {
+        ChannelAvatar(channel = channel, size = 36, avatarPath = avatarPath)
+        Spacer(Modifier.width(10.dp))
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall.copy(
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 16.sp,
+                    lineHeight = 20.sp,
+                ),
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            // Jarak judul -> subjudul disamakan dengan YouTube (±12px @2x).
+            Spacer(Modifier.height(9.dp))
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp,
+                ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        if (trailing != null) {
+            trailing()
+        }
+    }
+}
+
 @Composable
 fun VideoCard(
     video: Video,
@@ -353,54 +418,13 @@ fun VideoCard(
             }
         }
 
-        Spacer(Modifier.height(10.dp))
-        Row(modifier = Modifier.fillMaxWidth()) {
-            ChannelAvatar(channel = video.channel, size = 36, avatarPath = video.channelAvatarPath)
-            Spacer(Modifier.width(10.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = video.title,
-                    style = MaterialTheme.typography.titleSmall.copy(
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 16.sp,
-                        lineHeight = 21.sp,
-                    ),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    minLines = 2,
-                )
-                Spacer(Modifier.height(3.dp))
-                Text(
-                    text = video.channel,
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontSize = 13.sp,
-                        lineHeight = 18.sp,
-                    ),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = buildString {
-                        append(if (video.completed) "Sudah ditonton" else "Offline")
-                        if (video.canResume) {
-                            append(" • ")
-                            append(progressDescription(video.positionMs, video.durationMs))
-                        } else if (video.addedAt > 0L) {
-                            append(" • ")
-                            append(relativeDate(video.addedAt))
-                        }
-                    },
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontSize = 13.sp,
-                        lineHeight = 18.sp,
-                    ),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
+        Spacer(Modifier.height(12.dp))
+        VideoCardBody(
+            channel = video.channel,
+            avatarPath = video.channelAvatarPath,
+            title = video.title,
+            subtitle = videoSubtitle(video),
+        ) {
             Box {
                 IconButton(onClick = { menuOpen = true }) {
                     Icon(
@@ -501,21 +525,12 @@ fun WideVideoCard(
                 modifier = Modifier.align(Alignment.BottomCenter),
             )
         }
-        Spacer(Modifier.height(7.dp))
-        Text(
-            text = video.title,
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            minLines = 2,
-        )
-        Text(
-            text = "${video.channel} • ${progressDescription(video.positionMs, video.durationMs)}",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+        Spacer(Modifier.height(12.dp))
+        VideoCardBody(
+            channel = video.channel,
+            avatarPath = video.channelAvatarPath,
+            title = video.title,
+            subtitle = "${video.channel} • ${progressDescription(video.positionMs, video.durationMs)}",
         )
     }
 }

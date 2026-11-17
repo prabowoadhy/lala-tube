@@ -117,6 +117,10 @@ Di halaman tonton:
   grid menampilkan **3 kolom** video dengan ukuran kartu dan jarak yang sama
   dengan YouTube. Layar sangat lebar (≥1800dp) memakai 4 kolom, layar kecil
   2 kolom.
+- Teks di bawah thumbnail (nama kanal, status, tanggal, sisa menit) digabung
+  dalam satu baris seperti YouTube. Bila ruangnya kurang, teks otomatis turun
+  ke baris berikutnya. Kartu **Lanjutkan menonton** memakai susunan yang sama:
+  avatar kanal di kiri, lalu judul dan subjudul.
 - Header atas selalu tampil dengan logo dan judul selebar aplikasi YouTube.
 - Menu **Beranda / Favorit / Riwayat / Pengaturan** berada di tengah bawah
   layar, sama seperti aplikasi YouTube Android. Di halaman tonton menu ini
