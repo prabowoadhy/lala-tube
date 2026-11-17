@@ -5,6 +5,11 @@ import androidx.compose.ui.graphics.Color
 val YouTubeRed = Color(0xFFFF0033)
 val YouTubeRedDark = Color(0xFFFF4E5B)
 val Ink = Color(0xFF0F0F0F)
+/**
+ * Hitam lembut untuk teks logo "LalaTube". YouTube memakai #212121 pada teks
+ * judulnya, jadi tidak terasa pekat seperti hitam murni.
+ */
+val LogoInk = Color(0xFF212121)
 val MutedInk = Color(0xFF606060)
 val PageLight = Color(0xFFFFFFFF)
 val ChipLight = Color(0xFFF2F2F2)

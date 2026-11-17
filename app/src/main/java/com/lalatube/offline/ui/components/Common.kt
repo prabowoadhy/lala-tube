@@ -72,6 +72,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -79,11 +80,25 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.lalatube.offline.data.Video
+import com.lalatube.offline.ui.theme.LogoInk
 import com.lalatube.offline.ui.theme.YouTubeRed
 import com.lalatube.offline.util.codecLabel
 import com.lalatube.offline.util.formatDuration
 import com.lalatube.offline.util.progressDescription
 import com.lalatube.offline.util.relativeDate
+
+/**
+ * Warna teks logo "LalaTube".
+ *
+ * YouTube memakai hitam lembut (#212121) untuk judul aplikasinya, bukan hitam
+ * pekat (#0F0F0F), sehingga teks terlihat lebih kalem di layar head unit.
+ * Di tema gelap tetap memakai warna `onSurface` supaya tetap terbaca.
+ */
+@Composable
+private fun logoTextColor(): Color {
+    val dark = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    return if (dark) MaterialTheme.colorScheme.onSurface else LogoInk
+}
 
 @Composable
 fun LalaTubeLogo(modifier: Modifier = Modifier) {
@@ -114,8 +129,15 @@ fun LalaTubeLogo(modifier: Modifier = Modifier) {
                 fontSize = 23.sp,
                 lineHeight = 26.sp,
                 letterSpacing = (-1.2).sp,
+                // YouTube memakai hitam lembut (#212121) untuk teks judulnya,
+                // bukan hitam pekat. Di tema gelap tetap memakai warna onSurface.
+                shadow = androidx.compose.ui.graphics.Shadow(
+                    color = Color.Black.copy(alpha = 0.10f),
+                    offset = androidx.compose.ui.geometry.Offset(0f, 1f),
+                    blurRadius = 2f,
+                ),
             ),
-            color = MaterialTheme.colorScheme.onSurface,
+            color = logoTextColor(),
         )
     }
 }
