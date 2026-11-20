@@ -9,7 +9,10 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +29,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Cancel
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.FavoriteBorder
 import androidx.compose.material.icons.rounded.Forward10
@@ -64,6 +68,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -102,10 +107,14 @@ fun PlayerScreen(
     onProgress: (uri: String, positionMs: Long, completed: Boolean) -> Unit,
     onToggleFavorite: () -> Unit,
     onOpenChannel: (String) -> Unit,
+    minimized: Boolean = false,
+    onRestore: () -> Unit = {},
+    onMinimize: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val view = LocalView.current
+    val density = LocalDensity.current
     val currentIndex = queue.indexOfFirst { it.uri == video.uri }
     val nextVideo = if (currentIndex >= 0) queue.getOrNull(currentIndex + 1) else null
     // Seed per-video: kombinasi seed sesi + URI video yang diputar.
@@ -198,15 +207,29 @@ fun PlayerScreen(
         }
     }
 
+    // Nilai ikon status bar halaman utama (beranda), ditangkap saat player baru
+    // dibuka (sebelum efek pertama berjalan). Dipakai untuk mengembalikan status
+    // bar ke tampilan beranda saat PIP (minimized).
+    val homeStatusBarLight = remember {
+        (context as? android.app.Activity)?.window?.let { window ->
+            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars
+        }
+    }
+
     // Halaman tonton memakai status bar hitam (seperti YouTube), jadi ikon
     // status bar dibuat putih selama halaman ini terbuka lalu dikembalikan.
-    DisposableEffect(view) {
-        val window = (context as? android.app.Activity)?.window
-        val controller = window?.let { WindowCompat.getInsetsController(it, view) }
-        val previous = controller?.isAppearanceLightStatusBars
-        controller?.isAppearanceLightStatusBars = false
+    // Saat PIP (minimized), status bar dikembalikan ke tampilan halaman utama
+    // (ikon gelap/terang mengikuti tema), sama seperti beranda.
+    DisposableEffect(view, minimized) {
+        val window = (context as? android.app.Activity)?.window ?: return@DisposableEffect onDispose {}
+        val controller = WindowCompat.getInsetsController(window, view)
+        controller.isAppearanceLightStatusBars = if (minimized) {
+            homeStatusBarLight ?: false
+        } else {
+            false
+        }
         onDispose {
-            if (previous != null) controller.isAppearanceLightStatusBars = previous
+            controller.isAppearanceLightStatusBars = homeStatusBarLight ?: false
         }
     }
 
@@ -307,9 +330,19 @@ fun PlayerScreen(
     val showControls = controlsVisible || ended || errorMessage != null
 
     val playerStage: @Composable (Modifier) -> Unit = { stageModifier ->
+    val dragThreshold = with(density) { 120.dp.toPx() }
     Box(
         modifier = stageModifier
-            .background(Color.Black),
+            .background(Color.Black)
+            .pointerInput(Unit) {
+                detectDragGestures(
+                    onDrag = { _, dragDelta ->
+                        if (!minimized && dragDelta.y > dragThreshold) {
+                            onMinimize()
+                        }
+                    },
+                )
+            },
     ) {
         AndroidView(
             factory = { ctx ->
@@ -432,6 +465,15 @@ fun PlayerScreen(
                             },
                             tint = Color.White,
                         )
+                    }
+                    if (!minimized && !fullscreen) {
+                        IconButton(onClick = { onMinimize() }) {
+                            Icon(
+                                imageVector = Icons.Rounded.FullscreenExit,
+                                contentDescription = "Minimalkan pemutar",
+                                tint = Color.White,
+                            )
+                        }
                     }
                 }
 
@@ -593,7 +635,20 @@ fun PlayerScreen(
     }
     }
 
-    if (fullscreen) {
+    if (minimized) {
+        MinimizedPlayerStage(
+            video = video,
+            player = player,
+            isPlaying = isPlaying,
+            positionMs = positionMs,
+            durationMs = effectiveDuration,
+            onRestore = onRestore,
+            onBack = onBack,
+            onPlayVideo = onPlayVideo,
+            onToggleFavorite = onToggleFavorite,
+            modifier = modifier,
+        )
+    } else if (fullscreen) {
         playerStage(modifier.fillMaxSize())
     } else {
         WatchLayout(
@@ -606,6 +661,94 @@ fun PlayerScreen(
             onOpenChannel = onOpenChannel,
             playerStage = playerStage,
         )
+    }
+}
+
+/**
+ * Tampilan player kecil (picture-in-picture sederhana) saat dalam mode minimized.
+ * Video tetap memutar di pojok layar sambil pengguna kembali ke beranda.
+ */
+@Composable
+private fun MinimizedPlayerStage(
+    video: Video,
+    player: ExoPlayer,
+    isPlaying: Boolean,
+    positionMs: Long,
+    durationMs: Long,
+    onRestore: () -> Unit,
+    onBack: () -> Unit,
+    onPlayVideo: (Video) -> Unit,
+    onToggleFavorite: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val context = LocalContext.current
+    Box(
+        modifier = modifier
+            .background(Color.Black)
+            .clip(RoundedCornerShape(12.dp)),
+        contentAlignment = Alignment.Center,
+    ) {
+        AndroidView(
+            factory = { ctx ->
+                PlayerView(ctx).apply {
+                    useController = false
+                    resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                    setShutterBackgroundColor(AndroidColor.BLACK)
+                    keepScreenOn = true
+                    this.player = player
+                }
+            },
+            update = { it.player = player },
+            modifier = Modifier.fillMaxSize(),
+        )
+
+        // Tap di area video untuk restore ke layar penuh. Diletakkan lebih dulu
+        // (di bawah tombol) supaya tombol tetap bisa diketuk.
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    detectTapGestures {
+                        onRestore()
+                    }
+                },
+        )
+
+        // Tombol tutup PIP di pojok kanan atas.
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.TopEnd,
+        ) {
+            IconButton(
+                onClick = onBack,
+                modifier = Modifier.padding(2.dp).size(30.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Cancel,
+                    contentDescription = "Tutup pemutar",
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+        }
+
+        // Tombol kembalikan ke layar penuh di pojok kanan bawah.
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.BottomEnd,
+        ) {
+            IconButton(
+                onClick = onRestore,
+                modifier = Modifier.padding(2.dp).size(30.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Fullscreen,
+                    contentDescription = "Kembali ke layar penuh",
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+        }
     }
 }
 

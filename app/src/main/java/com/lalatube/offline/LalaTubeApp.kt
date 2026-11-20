@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -57,6 +58,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -66,7 +68,6 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.Lifecycle
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.offset
 import com.lalatube.offline.data.StorageAccess
 import com.lalatube.offline.data.ThemeMode
 import com.lalatube.offline.data.Video
@@ -87,6 +88,10 @@ private object Tabs {
     const val HISTORY = "history"
     const val SETTINGS = "settings"
 }
+
+/** Ukuran player kecil (minimized/popup pojok kanan bawah), proporsi 16:9. */
+private const val MinimizedPlayerWidthDp = 180
+private const val MinimizedPlayerHeightDp = 101
 
 private data class NavDestination(
     val tab: String,
@@ -134,8 +139,11 @@ fun LalaTubeApp(viewModel: MainViewModel) {
     var playerFullscreen by rememberSaveable { mutableStateOf(false) }
     var channelName by rememberSaveable { mutableStateOf<String?>(null) }
     var playerQueue by remember { mutableStateOf<List<String>>(emptyList()) }
+    /** Saat true, pemutar ditampilkan sebagai popup kecil pojok kanan bawah di atas beranda. */
+    var isMinimized by rememberSaveable { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val context = LocalContext.current
+    val density = LocalDensity.current
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
@@ -174,6 +182,7 @@ fun LalaTubeApp(viewModel: MainViewModel) {
     val openPlayer: (Video, List<Video>) -> Unit = { video, queue ->
         playerQueue = queue.map { it.uri }
         playerFullscreen = false
+        isMinimized = false
         playerId = video.uri
     }
 
@@ -191,6 +200,14 @@ fun LalaTubeApp(viewModel: MainViewModel) {
         state.videos
     }
 
+    // Kalau video yang dimuat tidak lagi ada di katalog (mis. folder berubah),
+    // tutup pemutar setelah aplikasi siap.
+    if (activeVideo == null && playerId != null) {
+        LaunchedEffect(state.initialized) {
+            if (state.initialized) playerId = null
+        }
+    }
+
     BackHandler(enabled = pickerOpen) { pickerOpen = false }
     BackHandler(enabled = !pickerOpen && activeVideo == null && searchOpen) { searchOpen = false }
     BackHandler(
@@ -202,6 +219,155 @@ fun LalaTubeApp(viewModel: MainViewModel) {
 
     LalaTubeTheme(themeMode = state.themeMode) {
         Box(modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+            // ============================================================
+            // LAPIS 1: Halaman utama — SELALU dirender, satu-satunya.
+            // Saat pemutar tampil penuh, layar ini tertutup; saat pemutar
+            // minimize, layar ini terlihat lengkap dengan bottom nav dan
+            // status bar seperti biasa (bukan halaman utama terpisah).
+            // ============================================================
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .windowInsetsPadding(WindowInsets.safeDrawing),
+            ) {
+                Scaffold(
+                    containerColor = MaterialTheme.colorScheme.background,
+                    contentWindowInsets = WindowInsets(0, 0, 0, 0),
+                    snackbarHost = {
+                        SnackbarHost(
+                            hostState = snackbarHostState,
+                            modifier = Modifier.padding(bottom = 66.dp),
+                        )
+                    },
+                ) { _ ->
+                    if (searchOpen) {
+                        SearchScreen(
+                            videos = state.videos,
+                            onPlay = openPlayer,
+                            onToggleFavorite = { viewModel.toggleFavorite(it.uri) },
+                            onBack = { searchOpen = false },
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    } else if (channelName != null) {
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            ChannelScreen(
+                                channel = channelName!!,
+                                videos = state.videos.filter {
+                                    it.channel == channelName
+                                },
+                                onPlayAll = {
+                                    val list = state.videos
+                                        .filter { it.channel == channelName }
+                                        .sortedWith(
+                                            compareByDescending<Video> { it.addedAt }
+                                                .thenByDescending { it.lastModified },
+                                        )
+                                    list.firstOrNull()?.let { first ->
+                                        openPlayer(first, list)
+                                    }
+                                },
+                                onPlay = openPlayer,
+                                onToggleFavorite = {
+                                    viewModel.toggleFavorite(it.uri)
+                                },
+                                onSearch = { searchOpen = true },
+                                onRefresh = viewModel::rescan,
+                                onBack = { channelName = null },
+                                modifier = Modifier.weight(1f),
+                            )
+                            AppBottomBar(
+                                selected = Tabs.HOME,
+                                onSelect = {
+                                    channelName = null
+                                    tab = it
+                                },
+                            )
+                        }
+                    } else {
+                        Column(modifier = Modifier.fillMaxSize()) {
+                            Column {
+                                AppTopBar(
+                                    isScanning = state.isScanning,
+                                    onSearch = { searchOpen = true },
+                                    onRefresh = viewModel::rescan,
+                                )
+                                if (state.isScanning) {
+                                    val progress = if (state.scanTotal > 0) {
+                                        state.scanDone.toFloat() / state.scanTotal.toFloat()
+                                    } else {
+                                        null
+                                    }
+                                    if (progress == null) {
+                                        LinearProgressIndicator(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(2.dp),
+                                        )
+                                    } else {
+                                        LinearProgressIndicator(
+                                            progress = { progress },
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .height(2.dp),
+                                        )
+                                    }
+                                }
+                            }
+
+                            Box(modifier = Modifier.weight(1f)) {
+                                when (tab) {
+                                    Tabs.FAVORITES -> FavoritesScreen(
+                                        videos = state.videos,
+                                        onPlay = openPlayer,
+                                        onToggleFavorite = { viewModel.toggleFavorite(it.uri) },
+                                        onPickFolder = pickFolder,
+                                        modifier = Modifier.fillMaxSize(),
+                                    )
+
+                                    Tabs.HISTORY -> HistoryScreen(
+                                        videos = state.videos,
+                                        onPlay = openPlayer,
+                                        onToggleFavorite = { viewModel.toggleFavorite(it.uri) },
+                                        modifier = Modifier.fillMaxSize(),
+                                    )
+
+                                    Tabs.SETTINGS -> SettingsScreen(
+                                        state = state,
+                                        onPickFolder = pickFolder,
+                                        onRescan = viewModel::rescan,
+                                        onAutoDetect = viewModel::autoDetect,
+                                        onForgetFolder = viewModel::forgetFolder,
+                                        onThemeChange = { mode: ThemeMode ->
+                                            viewModel.setThemeMode(mode)
+                                        },
+                                        onSafeModeChange = viewModel::setSafeMode,
+                                        onClearCrashReport = viewModel::clearCrashReport,
+                                        modifier = Modifier.fillMaxSize(),
+                                    )
+
+                                    else -> HomeScreen(
+                                        state = state,
+                                        onPlay = openPlayer,
+                                        onToggleFavorite = { viewModel.toggleFavorite(it.uri) },
+                                        onPickFolder = pickFolder,
+                                        onRescan = viewModel::rescan,
+                                        modifier = Modifier.fillMaxSize(),
+                                    )
+                                }
+                            }
+
+                            AppBottomBar(
+                                selected = tab,
+                                onSelect = { tab = it },
+                            )
+                        }
+                    }
+                }
+            }
+
+            // ============================================================
+            // LAPIS 2: Pemilih folder — overlay penuh di atas halaman utama.
+            // ============================================================
             if (pickerOpen) {
                 Surface(
                     color = MaterialTheme.colorScheme.background,
@@ -242,179 +408,67 @@ fun LalaTubeApp(viewModel: MainViewModel) {
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
-            } else if (activeVideo != null) {
-                key(activeVideo.uri) {
+            }
+
+            // ============================================================
+            // LAPIS 3: Pemutar video — overlay penuh, atau PIP kecil.
+            // ============================================================
+            activeVideo?.let { video ->
+                key(video.uri) {
                     PlayerScreen(
-                        video = activeVideo,
+                        video = video,
                         queue = activeQueue,
                         recommendations = state.videos,
                         shuffleSeed = state.shuffleSeed,
-                        fullscreen = playerFullscreen,
+                        fullscreen = playerFullscreen && !isMinimized,
                         onFullscreenChange = { playerFullscreen = it },
                         onBack = {
-                            playerId = null
-                            playerFullscreen = false
+                            // Back dari halaman putar = minimize (PIP),
+                            // seperti YouTube. Back saat sudah PIP = tutup.
+                            if (!isMinimized) {
+                                isMinimized = true
+                            } else {
+                                playerId = null
+                                playerFullscreen = false
+                                isMinimized = false
+                            }
                         },
                         onPlayVideo = { next ->
                             playerId = next.uri
+                            playerFullscreen = false
+                            isMinimized = false
                         },
                         onProgress = viewModel::updateProgress,
-                        onToggleFavorite = { viewModel.toggleFavorite(activeVideo.uri) },
+                        onToggleFavorite = { viewModel.toggleFavorite(video.uri) },
                         onOpenChannel = { channel ->
                             // Pindah ke halaman kanal; pemutar ditutup tetapi
                             // posisi tontonan tetap disimpan saat keluar.
                             playerId = null
                             playerFullscreen = false
+                            isMinimized = false
                             channelName = channel
                         },
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                }
-            } else {
-                if (playerId != null) {
-                    LaunchedEffect(state.initialized) {
-                        if (state.initialized) playerId = null
-                    }
-                }
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .windowInsetsPadding(WindowInsets.safeDrawing),
-                ) {
-                    Scaffold(
-                        containerColor = MaterialTheme.colorScheme.background,
-                        contentWindowInsets = WindowInsets(0, 0, 0, 0),
-                        snackbarHost = {
-                            SnackbarHost(
-                                hostState = snackbarHostState,
-                                modifier = Modifier.padding(bottom = 66.dp),
-                            )
+                        onMinimize = {
+                            isMinimized = true
                         },
-                    ) { _ ->
-                        if (searchOpen) {
-                            SearchScreen(
-                                videos = state.videos,
-                                onPlay = openPlayer,
-                                onToggleFavorite = { viewModel.toggleFavorite(it.uri) },
-                                onBack = { searchOpen = false },
-                                modifier = Modifier.fillMaxSize(),
-                            )
-                        } else if (channelName != null) {
-                            Column(modifier = Modifier.fillMaxSize()) {
-                                ChannelScreen(
-                                    channel = channelName!!,
-                                    videos = state.videos.filter {
-                                        it.channel == channelName
-                                    },
-                                    onPlayAll = {
-                                        val list = state.videos
-                                            .filter { it.channel == channelName }
-                                            .sortedWith(
-                                                compareByDescending<Video> { it.addedAt }
-                                                    .thenByDescending { it.lastModified },
-                                            )
-                                        list.firstOrNull()?.let { first ->
-                                            openPlayer(first, list)
-                                        }
-                                    },
-                                    onPlay = openPlayer,
-                                    onToggleFavorite = {
-                                        viewModel.toggleFavorite(it.uri)
-                                    },
-                                    onSearch = { searchOpen = true },
-                                    onRefresh = viewModel::rescan,
-                                    onBack = { channelName = null },
-                                    modifier = Modifier.weight(1f),
-                                )
-                                AppBottomBar(
-                                    selected = Tabs.HOME,
-                                    onSelect = {
-                                        channelName = null
-                                        tab = it
-                                    },
-                                )
+                        onRestore = {
+                            isMinimized = false
+                        },
+                        minimized = isMinimized,
+                        modifier = if (isMinimized) {
+                            // PIP menempel di pojok kanan bawah, tepat di atas
+                            // bottom nav agar tidak menutupi menu navigasi.
+                            val navBottom = with(density) {
+                                WindowInsets.navigationBars.getBottom(this).toDp()
                             }
+                            Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(end = 12.dp, bottom = navBottom + 64.dp)
+                                .size(MinimizedPlayerWidthDp.dp, MinimizedPlayerHeightDp.dp)
                         } else {
-                            Column(modifier = Modifier.fillMaxSize()) {
-                                Column {
-                                    AppTopBar(
-                                        isScanning = state.isScanning,
-                                        onSearch = { searchOpen = true },
-                                        onRefresh = viewModel::rescan,
-                                    )
-                                    if (state.isScanning) {
-                                        val progress = if (state.scanTotal > 0) {
-                                            state.scanDone.toFloat() / state.scanTotal.toFloat()
-                                        } else {
-                                            null
-                                        }
-                                        if (progress == null) {
-                                            LinearProgressIndicator(
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .height(2.dp),
-                                            )
-                                        } else {
-                                            LinearProgressIndicator(
-                                                progress = { progress },
-                                                modifier = Modifier
-                                                    .fillMaxWidth()
-                                                    .height(2.dp),
-                                            )
-                                        }
-                                    }
-                                }
-
-                                Box(modifier = Modifier.weight(1f)) {
-                                    when (tab) {
-                                        Tabs.FAVORITES -> FavoritesScreen(
-                                            videos = state.videos,
-                                            onPlay = openPlayer,
-                                            onToggleFavorite = { viewModel.toggleFavorite(it.uri) },
-                                            onPickFolder = pickFolder,
-                                            modifier = Modifier.fillMaxSize(),
-                                        )
-
-                                        Tabs.HISTORY -> HistoryScreen(
-                                            videos = state.videos,
-                                            onPlay = openPlayer,
-                                            onToggleFavorite = { viewModel.toggleFavorite(it.uri) },
-                                            modifier = Modifier.fillMaxSize(),
-                                        )
-
-                                        Tabs.SETTINGS -> SettingsScreen(
-                                            state = state,
-                                            onPickFolder = pickFolder,
-                                            onRescan = viewModel::rescan,
-                                            onAutoDetect = viewModel::autoDetect,
-                                            onForgetFolder = viewModel::forgetFolder,
-                                            onThemeChange = { mode: ThemeMode ->
-                                                viewModel.setThemeMode(mode)
-                                            },
-                                            onSafeModeChange = viewModel::setSafeMode,
-                                            onClearCrashReport = viewModel::clearCrashReport,
-                                            modifier = Modifier.fillMaxSize(),
-                                        )
-
-                                        else -> HomeScreen(
-                                            state = state,
-                                            onPlay = openPlayer,
-                                            onToggleFavorite = { viewModel.toggleFavorite(it.uri) },
-                                            onPickFolder = pickFolder,
-                                            onRescan = viewModel::rescan,
-                                            modifier = Modifier.fillMaxSize(),
-                                        )
-                                    }
-                                }
-
-                                AppBottomBar(
-                                    selected = tab,
-                                    onSelect = { tab = it },
-                                )
-                            }
-                        }
-                    }
+                            Modifier.fillMaxSize()
+                        },
+                    )
                 }
             }
         }
